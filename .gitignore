@@ -1,0 +1,32 @@
+# Entornos y dependencias
+venv/
+.env
+*.pyc
+__pycache__/
+
+# Configuración de editor/IDE
+.vscode/
+.idea/
+
+# Archivos temporales
+*.log
+*.pid
+*.sqlite3
+*.db
+
+# Cache de pruebas y coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Artefactos de distribución
+dist/
+build/
+*.egg-info/
+
+# Archivos del sistema
+Thumbs.db
+ehthumbs.db
+.DS_Store
+desktop.ini
+

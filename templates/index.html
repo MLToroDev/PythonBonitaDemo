@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bonita Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "Open Sans", Roboto, system-ui, sans-serif;
+        background-color: #f5f7fb;
+        color: #1f2933;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: #0a336d;
+        color: #fff;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      header h1 {
+        font-size: 1.35rem;
+        margin: 0;
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      header h1 span {
+        font-weight: 300;
+        opacity: 0.85;
+      }
+
+      .user-info {
+        font-size: 0.9rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      nav {
+        background: #062651;
+        padding: 0.5rem 2rem;
+        display: flex;
+        gap: 1rem;
+      }
+
+      nav button {
+        background: transparent;
+        border: none;
+        color: #cbd5e1;
+        font-weight: 600;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+      }
+
+      nav button.active,
+      nav button:hover {
+        background: #fff;
+        color: #062651;
+      }
+
+      main {
+        flex: 1;
+        padding: 2rem;
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      section.view {
+        display: none;
+      }
+
+      section.view.active {
+        display: block;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, rgba(10, 51, 109, 0.92), rgba(58, 102, 182, 0.92));
+        color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-header h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+
+      .card-body {
+        padding: 1.25rem 1.5rem 1.75rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.75rem;
+        border-bottom: 1px solid #edf1f7;
+      }
+
+      th {
+        background: #f1f5fb;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: #4a5568;
+      }
+
+      tr:hover td {
+        background: #f8fafc;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      button.primary {
+        background: #1d4ed8;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 0.45rem 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+      }
+
+      button.primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      button.secondary {
+        background: #fff;
+        color: #1d4ed8;
+        border: 1px solid #1d4ed8;
+        border-radius: 6px;
+        padding: 0.45rem 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+      }
+
+      button.secondary:hover {
+        background: #1d4ed8;
+        color: #fff;
+      }
+
+      form.inline {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1f2933;
+      }
+
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+      }
+
+      textarea {
+        min-height: 110px;
+        font-family: inherit;
+        resize: vertical;
+      }
+
+      .status-bar {
+        background: #e0ecff;
+        color: #1d4ed8;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      .status-bar.error {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .status-bar.success {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      .grid-two {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+
+      @media (max-width: 768px) {
+        header,
+        nav {
+          padding: 1rem;
+        }
+
+        main {
+          padding: 1.25rem;
+        }
+
+        table {
+          font-size: 0.88rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Bonita Control Center <span>FastAPI Prototype</span></h1>
+      <div class="user-info">
+        <span>Sesión: <strong id="session-user">Usuario API</strong></span>
+        <span id="last-sync">Sincronización pendiente…</span>
+      </div>
+    </header>
+
+    <nav>
+      <button class="tab-btn active" data-target="view-processes">Procesos</button>
+      <button class="tab-btn" data-target="view-tasks">Tareas</button>
+      <button class="tab-btn" data-target="view-cases">Casos</button>
+    </nav>
+
+    <main>
+      <section id="view-processes" class="view active">
+        <div class="card">
+          <div class="card-header">
+            <h2>Procesos desplegados</h2>
+            <div class="actions">
+              <button class="secondary" id="refresh-processes">Actualizar</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="processes-status" class="status-bar" hidden></div>
+            <table id="processes-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Versión</th>
+                  <th>Estado</th>
+                  <th>ID</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <h2>Instanciar proceso</h2>
+          </div>
+          <div class="card-body">
+            <div id="start-status" class="status-bar" hidden></div>
+            <form class="inline" id="start-form">
+              <div>
+                <label for="process-select">Proceso</label>
+                <select id="process-select">
+                  <option value="">Selecciona un proceso</option>
+                </select>
+              </div>
+              <div>
+                <label for="process-variables">Variables (JSON)</label>
+                <textarea
+                  id="process-variables"
+                  placeholder='{"solicitud": "demo"}'
+                ></textarea>
+              </div>
+              <div class="actions">
+                <button type="submit" class="primary">Iniciar instancia</button>
+                <button type="reset" class="secondary">Limpiar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-tasks" class="view">
+        <div class="grid-two">
+          <div class="card">
+            <div class="card-header">
+              <h2>Tareas disponibles</h2>
+              <div class="actions">
+                <button class="secondary" id="refresh-tasks">Actualizar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <form class="inline" id="task-filter-form">
+                <div>
+                  <label for="task-state">Estado</label>
+                  <select id="task-state">
+                    <option value="ready">Ready</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="completed">Completed</option>
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="task-user">ID usuario (opcional)</label>
+                  <input id="task-user" placeholder="ej: 4" />
+                </div>
+                <div class="actions">
+                  <button type="submit" class="primary">Filtrar</button>
+                  <button type="reset" class="secondary">Limpiar</button>
+                </div>
+              </form>
+
+              <div id="tasks-status" class="status-bar" hidden></div>
+              <table id="tasks-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Proceso</th>
+                    <th>Estado</th>
+                    <th>Asignado</th>
+                    <th>ID</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Actualizar tarea</h2>
+            </div>
+            <div class="card-body">
+              <div id="task-action-status" class="status-bar" hidden></div>
+              <form class="inline" id="assign-form">
+                <h3>Reclamar tarea</h3>
+                <label for="assign-task-id">ID tarea</label>
+                <input id="assign-task-id" placeholder="ID numérico" />
+                <label for="assign-user-id">ID usuario</label>
+                <input id="assign-user-id" placeholder="Usuario asignado" />
+                <button type="submit" class="primary">Asignar</button>
+              </form>
+
+              <form class="inline" id="complete-form" style="margin-top: 1.5rem;">
+                <h3>Completar tarea</h3>
+                <label for="complete-task-id">ID tarea</label>
+                <input id="complete-task-id" placeholder="ID numérico" />
+                <label for="complete-variables">Variables (JSON)</label>
+                <textarea
+                  id="complete-variables"
+                  placeholder='{"aprobado": true}'
+                ></textarea>
+                <button type="submit" class="primary">Completar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-cases" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h2>Estado de caso</h2>
+          </div>
+          <div class="card-body">
+            <div id="case-status" class="status-bar" hidden></div>
+            <form class="inline" id="case-form">
+              <div>
+                <label for="case-id">ID de caso</label>
+                <input id="case-id" placeholder="Ej: 101" />
+              </div>
+              <div class="actions">
+                <button type="submit" class="primary">Consultar</button>
+                <button type="reset" class="secondary">Limpiar</button>
+              </div>
+            </form>
+
+            <div style="margin-top: 1.5rem;">
+              <h3>Detalle</h3>
+              <pre id="case-output" style="background: #0b1733; color: #cbd5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; min-height: 180px;"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      const views = document.querySelectorAll(".view");
+
+      const activateTab = (targetId) => {
+        tabButtons.forEach((button) => {
+          const matchesTarget = button.dataset.target === targetId;
+          button.classList.toggle("active", matchesTarget);
+        });
+        views.forEach((view) => {
+          view.classList.toggle("active", view.id === targetId);
+        });
+      };
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          activateTab(btn.dataset.target);
+        });
+      });
+
+      function setStatus(element, message, type = "info") {
+        if (!element) return;
+        element.hidden = false;
+        element.textContent = message;
+        element.classList.remove("error", "success");
+        if (type === "error") {
+          element.classList.add("error");
+        } else if (type === "success") {
+          element.classList.add("success");
+        }
+      }
+
+      function clearStatus(element) {
+        if (!element) return;
+        element.hidden = true;
+        element.textContent = "";
+        element.classList.remove("error", "success");
+      }
+
+      async function callApi(url, options = {}) {
+        try {
+          const response = await fetch(url, {
+            headers: { "Content-Type": "application/json" },
+            ...options,
+          });
+          if (!response.ok) {
+            const detail = await response.text();
+            throw new Error(detail || response.statusText);
+          }
+          const text = await response.text();
+          if (!text) return {};
+          return JSON.parse(text);
+        } catch (error) {
+          throw error;
+        }
+      }
+
+      const processesTableBody = document.querySelector("#processes-table tbody");
+      const processesStatus = document.getElementById("processes-status");
+      const processSelect = document.getElementById("process-select");
+      const startStatus = document.getElementById("start-status");
+      const tasksTableBody = document.querySelector("#tasks-table tbody");
+      const tasksStatus = document.getElementById("tasks-status");
+      const taskActionStatus = document.getElementById("task-action-status");
+      const caseOutput = document.getElementById("case-output");
+      const caseStatus = document.getElementById("case-status");
+      const lastSync = document.getElementById("last-sync");
+
+      function renderProcesses(processes) {
+        processesTableBody.innerHTML = "";
+        processSelect.innerHTML = '<option value="">Selecciona un proceso</option>';
+
+        processes.forEach((process) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${process.displayName || process.name}</td>
+            <td>${process.version}</td>
+            <td>${process.activationState || "N/D"}</td>
+            <td>${process.id}</td>
+            <td>
+              <div class="actions">
+                <button class="primary start-process-btn" data-id="${process.id}">
+                  Iniciar
+                </button>
+              </div>
+            </td>
+          `;
+          processesTableBody.appendChild(row);
+
+          const option = document.createElement("option");
+          option.value = process.id;
+          option.textContent = `${process.displayName || process.name} (v${process.version})`;
+          processSelect.appendChild(option);
+        });
+
+        document.querySelectorAll(".start-process-btn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            clearStatus(startStatus);
+            const processId = btn.dataset.id;
+            try {
+              const result = await callApi(`/api/bonita/processes/${processId}/start`, {
+                method: "POST",
+                body: JSON.stringify({}),
+              });
+              setStatus(startStatus, `Instancia creada con ID ${result.caseId || result.id}`, "success");
+            } catch (error) {
+              setStatus(startStatus, `Error iniciando proceso: ${error}`, "error");
+            }
+          });
+        });
+      }
+
+      function renderTasks(tasks) {
+        tasksTableBody.innerHTML = "";
+        tasks.forEach((task) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${task.displayName || task.name}</td>
+            <td>${task.processDefinitionId || "N/D"}</td>
+            <td>${task.state}</td>
+            <td>${task.assigned_id || "-"}</td>
+            <td>${task.id}</td>
+            <td>
+              <div class="actions">
+                <button class="secondary fill-task-btn" data-id="${task.id}">
+                  Rellenar formularios
+                </button>
+              </div>
+            </td>
+          `;
+          tasksTableBody.appendChild(row);
+        });
+
+        document.querySelectorAll(".fill-task-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document.getElementById("complete-task-id").value = btn.dataset.id;
+            setStatus(taskActionStatus, `Listo para completar la tarea ${btn.dataset.id}`, "info");
+          });
+        });
+      }
+
+      async function loadProcesses() {
+        setStatus(processesStatus, "Consultando procesos…");
+        try {
+          const data = await callApi("/api/bonita/processes");
+          renderProcesses(data);
+          setStatus(processesStatus, `Procesos cargados (${data.length}).`, "success");
+        } catch (error) {
+          setStatus(processesStatus, `Error al obtener procesos: ${error}`, "error");
+        } finally {
+          lastSync.textContent = `Última sincronización: ${new Date().toLocaleString()}`;
+        }
+      }
+
+      async function loadTasks(filters = {}) {
+        const params = new URLSearchParams();
+        if (filters.state) params.append("state", filters.state);
+        if (filters.user_id) params.append("user_id", filters.user_id);
+
+        setStatus(tasksStatus, "Consultando tareas…");
+        try {
+          const data = await callApi(`/api/bonita/tasks?${params.toString()}`);
+          renderTasks(data);
+          setStatus(tasksStatus, `Tareas cargadas (${data.length}).`, "success");
+        } catch (error) {
+          setStatus(tasksStatus, `Error al obtener tareas: ${error}`, "error");
+        }
+      }
+
+      document.getElementById("refresh-processes").addEventListener("click", loadProcesses);
+      document.getElementById("refresh-tasks").addEventListener("click", () =>
+        loadTasks({
+          state: document.getElementById("task-state").value,
+          user_id: document.getElementById("task-user").value.trim(),
+        })
+      );
+
+      document.getElementById("start-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const processId = processSelect.value;
+        if (!processId) {
+          setStatus(startStatus, "Selecciona un proceso para continuar.", "error");
+          return;
+        }
+
+        let contractPayload = {};
+        const rawVariables = document.getElementById("process-variables").value;
+        if (rawVariables) {
+          try {
+            contractPayload = JSON.parse(rawVariables);
+          } catch (error) {
+            setStatus(startStatus, "El JSON de variables no es válido.", "error");
+            return;
+          }
+        }
+
+        setStatus(startStatus, "Iniciando proceso…");
+        try {
+          const result = await callApi(`/api/bonita/processes/${processId}/start`, {
+            method: "POST",
+            body: JSON.stringify(contractPayload),
+          });
+          setStatus(startStatus, `Proceso iniciado. Case ID: ${result.caseId || result.id}`, "success");
+          const form = event.target;
+          if (form && typeof form.reset === "function") {
+            form.reset();
+          }
+          activateTab("view-tasks");
+          loadTasks({ state: "ready" });
+        } catch (error) {
+          setStatus(startStatus, `Error al iniciar: ${error}`, "error");
+        }
+      });
+
+      document.getElementById("task-filter-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const state = document.getElementById("task-state").value;
+        const userId = document.getElementById("task-user").value.trim();
+        loadTasks({ state, user_id: userId });
+      });
+
+      document.getElementById("task-filter-form").addEventListener("reset", () => {
+        setTimeout(() => loadTasks({ state: "ready" }), 50);
+      });
+
+      document.getElementById("assign-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const taskId = document.getElementById("assign-task-id").value.trim();
+        const userId = document.getElementById("assign-user-id").value.trim();
+        if (!taskId || !userId) {
+          setStatus(taskActionStatus, "Debes indicar ID de tarea y usuario.", "error");
+          return;
+        }
+
+        setStatus(taskActionStatus, "Asignando tarea…");
+        try {
+          await callApi(`/api/bonita/tasks/${taskId}/assign`, {
+            method: "POST",
+            body: JSON.stringify({ user_id: userId }),
+          });
+          setStatus(taskActionStatus, `Tarea ${taskId} asignada a ${userId}.`, "success");
+          loadTasks({ state: document.getElementById("task-state").value });
+        } catch (error) {
+          setStatus(taskActionStatus, `Error al asignar: ${error}`, "error");
+        }
+      });
+
+      document.getElementById("complete-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const taskId = document.getElementById("complete-task-id").value.trim();
+        if (!taskId) {
+          setStatus(taskActionStatus, "Debes indicar el ID de la tarea a completar.", "error");
+          return;
+        }
+
+        let contractInputs = {};
+        const rawVariables = document.getElementById("complete-variables").value;
+        if (rawVariables) {
+          try {
+            contractInputs = JSON.parse(rawVariables);
+          } catch (error) {
+            setStatus(taskActionStatus, "El JSON de variables no es válido.", "error");
+            return;
+          }
+        }
+
+        setStatus(taskActionStatus, `Completando tarea ${taskId}…`);
+        try {
+          await callApi(`/api/bonita/tasks/${taskId}/complete`, {
+            method: "POST",
+            body: JSON.stringify({ contract_inputs: contractInputs }),
+          });
+          setStatus(taskActionStatus, `Tarea ${taskId} completada.`, "success");
+          loadTasks({ state: document.getElementById("task-state").value });
+        } catch (error) {
+          setStatus(taskActionStatus, `Error al completar: ${error}`, "error");
+        }
+      });
+
+      document.getElementById("case-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const caseId = document.getElementById("case-id").value.trim();
+        if (!caseId) {
+          setStatus(caseStatus, "Debes indicar un ID de caso.", "error");
+          return;
+        }
+
+        setStatus(caseStatus, "Consultando caso…");
+        try {
+          const result = await callApi(`/api/bonita/cases/${caseId}`);
+          clearStatus(caseStatus);
+          caseOutput.textContent = JSON.stringify(result, null, 2);
+        } catch (error) {
+          setStatus(caseStatus, `Error al consultar caso: ${error}`, "error");
+          caseOutput.textContent = "";
+        }
+      });
+
+      document.getElementById("case-form").addEventListener("reset", () => {
+        clearStatus(caseStatus);
+        caseOutput.textContent = "";
+      });
+
+      loadProcesses();
+      loadTasks({ state: "ready" });
+    </script>
+  </body>
+</html>
+
+

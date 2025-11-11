@@ -682,22 +682,16 @@
           return;
         }
 
-        let contractInputs = {};
-        const rawVariables = document.getElementById("complete-variables").value;
-        if (rawVariables) {
-          try {
-            contractInputs = JSON.parse(rawVariables);
-          } catch (error) {
-            setStatus(taskActionStatus, "El JSON de variables no es válido.", "error");
-            return;
-          }
-        }
-
         setStatus(taskActionStatus, `Completando tarea ${taskId}…`);
         try {
           await callApi(`/api/bonita/tasks/${taskId}/complete`, {
             method: "POST",
-            body: JSON.stringify({ contract_inputs: contractInputs }),
+            body: JSON.stringify({
+              contract_inputs: {
+                responsable: "22",
+                observacionesLider: "asdasd",
+              },
+            }),
           });
           setStatus(taskActionStatus, `Tarea ${taskId} completada.`, "success");
           loadTasks({ state: document.getElementById("task-state").value });

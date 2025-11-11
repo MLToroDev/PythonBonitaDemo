@@ -49,6 +49,10 @@ class CompleteTaskPayload(BaseModel):
         default_factory=dict,
         description="Datos del contrato a enviar al completar la tarea",
     )
+    variables: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Variables legacy (arrays de name/value) para formularios antiguos",
+    )
 
 
 class CaseDetails(BaseModel):

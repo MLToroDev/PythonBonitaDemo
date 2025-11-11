@@ -1,7 +1,9 @@
 from functools import lru_cache
 
 from .config import get_settings
-from .services.bonita_client import BonitaClient
+from .domain.contratos.services import ContratosService
+from .infrastructure.bonita.client import BonitaClient
+from .infrastructure.bonita.contratos_repository import BonitaContratosRepository
 
 
 @lru_cache
@@ -26,4 +28,13 @@ def get_bonita_client() -> BonitaClient:
         client.login()
     return client
 
+
+@lru_cache
+def get_contratos_service() -> ContratosService:
+    """
+    Resuelve la implementación de ContratosService utilizando el repositorio de Bonita.
+    """
+    client = get_bonita_client()
+    repository = BonitaContratosRepository(client=client)
+    return ContratosService(repository=repository)
 

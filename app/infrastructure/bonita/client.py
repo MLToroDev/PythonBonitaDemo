@@ -13,6 +13,10 @@ logger.setLevel(logging.INFO)
 class BonitaClientError(Exception):
     """Error genérico de la integración con Bonita."""
 
+    def __init__(self, message: str, *, details: Optional[Dict[str, Any]] = None) -> None:
+        super().__init__(message)
+        self.details: Dict[str, Any] = details or {}
+
 
 class BonitaAuthenticationError(BonitaClientError):
     """Se lanza cuando la autenticación con Bonita falla."""
@@ -66,12 +70,26 @@ class BonitaClient:
         except HTTPError as exc:
             logger.error("Error de autenticación en Bonita: %s", exc)
             raise BonitaAuthenticationError(
-                "Credenciales inválidas o error de autenticación."
+                "Credenciales inválidas o error de autenticación.",
+                details={
+                    "status_code": exc.response.status_code
+                    if exc.response is not None
+                    else None,
+                    "endpoint": login_url,
+                    "response_text": exc.response.text
+                    if exc.response is not None
+                    else None,
+                },
             ) from exc
         except RequestException as exc:
             logger.error("Fallo de red al autenticarse en Bonita: %s", exc)
             raise BonitaAuthenticationError(
-                "No se pudo acceder al servicio de Bonita."
+                "No se pudo acceder al servicio de Bonita.",
+                details={
+                    "endpoint": login_url,
+                    "error_type": exc.__class__.__name__,
+                    "error_message": str(exc),
+                },
             ) from exc
 
         self._update_csrf_token()
@@ -118,6 +136,7 @@ class BonitaClient:
             f"/API/bpm/process/{process_id}/instantiation",
             json=payload,
         )
+
     def get_tasks(
         self,
         state: Optional[str] = "ready",
@@ -140,16 +159,19 @@ class BonitaClient:
 
     def assign_task(self, task_id: str, user_id: str) -> Dict[str, Any]:
         payload = {"assigned_id": user_id}
-        return self._request("put", f"/API/bpm/userTask/{task_id}", json=payload)
+        return self._request("put", f"/API/bpm/humanTask/{task_id}", json=payload)
 
     def complete_task(
         self,
         task_id: str,
         contract_inputs: Optional[Dict[str, Any]] = None,
+        variables: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         payload: Dict[str, Any] = {"state": "completed"}
         if contract_inputs:
             payload["contractInputs"] = contract_inputs
+        if variables:
+            payload["variables"] = self._format_variables_payload(variables)
         return self._request(
             "post",
             f"/API/bpm/userTask/{task_id}/execution",
@@ -224,23 +246,47 @@ class BonitaClient:
                     json=json,
                     _retry=False,
                 )
-            status_code = exc.response.status_code if exc.response else "desconocido"
-            message = exc.response.text if exc.response else str(exc)
+            status_code: Optional[int] = None
+            response_text: Optional[str] = None
+            response_json: Optional[Any] = None
+            if exc.response is not None:
+                status_code = exc.response.status_code
+                response_text = exc.response.text
+                try:
+                    response_json = exc.response.json()
+                except ValueError:
+                    response_json = None
+            message = response_text if response_text else str(exc)
             logger.error(
                 "Bonita devolvió un error HTTP en %s %s [%s]: %s",
                 method.upper(),
                 endpoint,
-                status_code,
+                status_code if status_code is not None else "desconocido",
                 message,
             )
             raise BonitaClientError(
-                f"Error al comunicarse con Bonita (HTTP {status_code})."
+                f"Error al comunicarse con Bonita (HTTP {status_code if status_code is not None else 'desconocido'}).",
+                details={
+                    "status_code": status_code,
+                    "method": method.upper(),
+                    "endpoint": endpoint,
+                    "response_text": response_text,
+                    "response_json": response_json,
+                },
             ) from exc
         except RequestException as exc:
             logger.error(
                 "Error de red en la petición %s %s: %s", method.upper(), endpoint, exc
             )
-            raise BonitaClientError("Error de red al comunicarse con Bonita.") from exc
+            raise BonitaClientError(
+                "Error de red al comunicarse con Bonita.",
+                details={
+                    "method": method.upper(),
+                    "endpoint": endpoint,
+                    "error_type": exc.__class__.__name__,
+                    "error_message": str(exc),
+                },
+            ) from exc
 
     @staticmethod
     def _format_variables_payload(variables: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -248,3 +294,5 @@ class BonitaClient:
         for name, value in variables.items():
             formatted.append({"name": name, "value": value})
         return formatted
+
+

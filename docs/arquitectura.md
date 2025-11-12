@@ -14,13 +14,13 @@ Este documento resume la organización del proyecto tras la refactorización hac
   Implementa los repositorios concretos que hablan con la API REST de Bonita usando `BonitaClient`.
 
 - **Configuración (`app/config.py`, `app/dependencies.py`, `app/main.py`)**  
-  Resuelve las dependencias, levanta la aplicación y maneja el ciclo de vida (login/logout automático).
+  Resuelve las dependencias y centraliza la obtención de credenciales vía HTTP Basic por petición.
 
 ## Flujo de una petición típica
 
 1. **Router HTTP** (`app/api/routers/contratos.py`) recibe la solicitud y valida DTOs de entrada.
 2. **Servicio de dominio** (`app/domain/contratos/services.py`) ejecuta la lógica principal y coordina repositorios.
-3. **Repositorio Bonita** (`app/infrastructure/bonita/contratos_repository.py`) se comunica con Bonita a través de `BonitaClient`.
+3. **Repositorio Bonita** (`app/infrastructure/bonita/contratos_repository.py`) se comunica con Bonita a través de `BonitaClient`, autenticado con las credenciales recibidas.
 4. **Entidades de dominio** se transforman en DTOs de salida.
 5. **FastAPI** responde con JSON consistente para los consumidores externos (p.ej., frontends Laravel).
 
@@ -33,8 +33,8 @@ Este documento resume la organización del proyecto tras la refactorización hac
 - `app/domain/contratos/services.py`: Lógica de negocio reutilizable y testeable.
 - `app/infrastructure/bonita/client.py`: Cliente HTTP reutilizable para autenticación y llamadas a Bonita.
 - `app/infrastructure/bonita/contratos_repository.py`: Implementación del repositorio usando `BonitaClient`.
-- `app/dependencies.py`: Registro de singletons (`BonitaClient`, `BonitaContratosRepository`, `ContratosService`).
-- `app/main.py`: Registro de router, plantilla inicial y hooks de startup/shutdown.
+- `app/dependencies.py`: Resolución de `ContratosService` y `BonitaClient` por petición según las credenciales HTTP Basic.
+- `app/main.py`: Registro de router y plantilla inicial.
 
 ## Beneficios obtenidos
 
@@ -42,7 +42,7 @@ Este documento resume la organización del proyecto tras la refactorización hac
 - **Testabilidad**: los servicios de dominio aceptan un repositorio que implementa el protocolo `ContratosRepository`, facilitando pruebas unitarias sin tocar Bonita.
 - **Escalabilidad**: nuevos dominios se implementan duplicando la estructura `app/domain/<dominio>` y `app/infrastructure/bonita/<dominio>`.
 - **DTOs explícitos**: FastAPI documenta contratos HTTP sin exponer estructuras crudas de Bonita.
-- **Gestión centralizada de sesión**: `get_bonita_client()` mantiene una única sesión autenticada y se renueva automáticamente.
+- **Credenciales dinámicas**: cada petición puede autenticarse con un usuario distinto de Bonita vía HTTP Basic, evitando credenciales “quemadas” en `.env`.
 
 ## Próximos pasos sugeridos
 

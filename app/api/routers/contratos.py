@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from ...dependencies import get_contratos_service
 from ...domain.contratos.services import ContratosService
@@ -99,7 +99,7 @@ async def list_tasks(
         _handle_bonita_error(exc)
 
 
-@router.post("/tasks/{task_id}/assign", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/tasks/{task_id}/assign", response_class=Response)
 async def assign_task(
     task_id: str,
     payload: AssignTaskPayloadDTO,
@@ -107,11 +107,12 @@ async def assign_task(
 ) -> None:
     try:
         service.asignar_tarea(task_id=task_id, user_id=payload.user_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except BonitaClientError as exc:
         _handle_bonita_error(exc)
 
 
-@router.post("/tasks/{task_id}/complete", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/tasks/{task_id}/complete", response_class=Response)
 async def complete_task(
     task_id: str,
     payload: CompleteTaskPayloadDTO,
@@ -123,6 +124,7 @@ async def complete_task(
             contract_inputs=payload.contract_inputs or None,
             variables=payload.variables or None,
         )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except BonitaClientError as exc:
         _handle_bonita_error(exc)
 

@@ -8,16 +8,15 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
 .
 ├── app
 │   ├── api
-│   │   └── routes.py          # Endpoints expuestos por FastAPI
-│   ├── models
-│   │   └── schemas.py         # Modelos Pydantic (requests/responses)
-│   ├── services
-│   │   └── bonita_client.py   # Cliente HTTP con la lógica de negocio
+│   │   ├── dto                # DTOs Pydantic
+│   │   └── routers            # Endpoints FastAPI
+│   ├── domain                 # Lógica de negocio por dominios
+│   ├── infrastructure         # Integraciones concretas (Bonita)
 │   ├── config.py              # Carga de variables de entorno
-│   ├── dependencies.py        # Inyección simple de BonitaClient
+│   ├── dependencies.py        # Inyección de servicios/repositorios
 │   └── main.py                # Punto de entrada FastAPI
-├── templates
-│   └── index.html             # UI mínima para probar la API
+├── docs                       # Documentación del proyecto
+├── templates                  # UI mínima para probar la API
 ├── env.example                # Ejemplo de configuración (.env)
 ├── requirements.txt           # Dependencias del proyecto
 └── Dockerfile                 # Contenedor opcional de despliegue
@@ -50,8 +49,6 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
    Variables disponibles:
 
    - `BONITA_URL`: URL base del portal (ej. `http://localhost:8080/bonita`)
-   - `BONITA_USER`: Usuario con permisos para los procesos (ej. `walter.bates`)
-   - `BONITA_PASSWORD`: Contraseña del usuario
 
 ## 🚀 Puesta en Marcha
 
@@ -66,7 +63,14 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
    - Swagger UI: http://localhost:8000/docs
    - Redoc: http://localhost:8000/redoc
 
-3. **Usa la UI incluida (estilo Bonita)**
+3. **Autenticación por solicitud (HTTP Basic)**
+
+   Cada petición a `/api/bonita/*` debe incluir credenciales válidas de Bonita usando **HTTP Basic Auth**. La aplicación no almacena usuarios en `.env`; toma el usuario/contraseña de los encabezados de la petición. Así puedes probar con distintos perfiles:
+
+   - Usuario: `walter.bates`
+   - Contraseña: `bpm`
+
+4. **Usa la UI incluida (estilo Bonita)**
 
    - Visita http://localhost:8000 para acceder al panel HTML inspirado en la Bonita User Application.
    - Desde allí puedes:
@@ -86,7 +90,7 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
 
 ## 🧪 Flujo de Demo Sugerido
 
-1. Autenticarse (automático en el arranque de la app).
+1. Autenticarse enviando credenciales HTTP Basic por petición.
 2. Listar procesos (`GET /api/bonita/processes`).
 3. Instanciar un proceso con datos de entrada (`POST /processes/{id}/start`).
 4. Verificar el nuevo caso en el Portal de Bonita.

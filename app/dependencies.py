@@ -1,57 +1,55 @@
-from dataclasses import dataclass
-
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from .config import get_settings
+from .core.session_cache import get_session, remove_session
 from .domain.contratos.services import ContratosService
-from .infrastructure.bonita.client import BonitaClient
+from .infrastructure.bonita.client import (
+    BonitaAuthenticationError,
+    BonitaClient,
+    BonitaClientError,
+)
 from .infrastructure.bonita.contratos_repository import BonitaContratosRepository
-
-security = HTTPBasic(auto_error=False)
-
-
-@dataclass(frozen=True)
-class BonitaCredentials:
-    username: str
-    password: str
+from .security import get_current_user
 
 
-def get_bonita_credentials(
-    credentials: HTTPBasicCredentials | None = Depends(security),
-) -> BonitaCredentials:
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Se requieren credenciales Basic de Bonita.",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    if not credentials.username or not credentials.password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales de Bonita inválidas.",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return BonitaCredentials(
-        username=credentials.username,
-        password=credentials.password,
+def _unauthorized_session_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Sesión de Bonita no encontrada o expirada. Vuelve a iniciar sesión.",
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 
 def get_bonita_client(
-    bonita_credentials: BonitaCredentials = Depends(get_bonita_credentials),
+    current_user: str = Depends(get_current_user),
 ) -> BonitaClient:
     """
-    Devuelve un cliente autenticado en Bonita usando las credenciales
-    recibidas en la cabecera HTTP Basic Auth.
+    Devuelve un cliente autenticado en Bonita reutilizando la sesión almacenada.
     """
-    settings = get_settings()
-    client = BonitaClient(
-        base_url=settings.bonita_url,
-        username=bonita_credentials.username,
-        password=bonita_credentials.password,
-    )
-    client.login()
+    client = get_session(current_user)
+    if client is None:
+        raise _unauthorized_session_exception()
+
+    if not client.is_session_active:
+        try:
+            client.login()
+        except BonitaAuthenticationError as exc:
+            remove_session(current_user)
+            raise _unauthorized_session_exception() from exc
+
+    try:
+        client.get_session_info()
+    except BonitaAuthenticationError as exc:
+        remove_session(current_user)
+        raise _unauthorized_session_exception() from exc
+    except BonitaClientError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={
+                "message": "Error al validar la sesión de Bonita.",
+                "details": exc.details,
+            },
+        ) from exc
+
     return client
 
 

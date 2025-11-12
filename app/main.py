@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from .api.auth import router as auth_router
 from .api.routers.contratos import router as contratos_router
 
 
@@ -19,6 +20,7 @@ async def index(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(contratos_router, prefix="/api")
 
 

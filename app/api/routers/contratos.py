@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from ...dependencies import get_contratos_service
 from ...domain.contratos.services import ContratosService
 from ...infrastructure.bonita.client import BonitaClientError
+from ...security import get_current_user
 from ..dto.contratos import (
     AssignTaskPayloadDTO,
     CompleteTaskPayloadDTO,
@@ -43,6 +44,7 @@ async def list_processes(
     sort: Optional[str] = Query(
         default=None, description="Formato esperado: campo ASC|DESC"
     ),
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> List[ContractProcessDTO]:
     try:
@@ -60,6 +62,7 @@ async def list_processes(
 async def start_process_instance(
     process_id: str,
     payload: StartProcessPayloadDTO,
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> StartProcessResponseDTO:
     try:
@@ -83,6 +86,7 @@ async def list_tasks(
         default=None,
         description="Formato: campo ASC|DESC",
     ),
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> List[ContractTaskDTO]:
     try:
@@ -103,6 +107,7 @@ async def list_tasks(
 async def assign_task(
     task_id: str,
     payload: AssignTaskPayloadDTO,
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> None:
     try:
@@ -116,6 +121,7 @@ async def assign_task(
 async def complete_task(
     task_id: str,
     payload: CompleteTaskPayloadDTO,
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> None:
     try:
@@ -133,6 +139,7 @@ async def complete_task(
 async def get_case(
     case_id: str,
     include_variables: bool = Query(default=True),
+    current_user: str = Depends(get_current_user),
     service: ContratosService = Depends(get_contratos_service),
 ) -> ContractCaseWithVariablesDTO:
     try:

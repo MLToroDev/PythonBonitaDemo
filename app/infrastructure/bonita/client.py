@@ -117,6 +117,12 @@ class BonitaClient:
             self._logged_in = False
             self.csrf_token = None
 
+    def get_session_info(self) -> Dict[str, Any]:
+        """
+        Obtiene la información de la sesión actual en Bonita.
+        """
+        return self._request("get", "/API/system/session/1")
+
     def get_processes(
         self, page: int = 0, count: int = 10, sort: Optional[str] = None
     ) -> List[Dict[str, Any]]:

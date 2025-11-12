@@ -3,7 +3,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from .api.auth import router as auth_router
-from .api.routers.contratos import router as contratos_router
+from .api.routers.casos import router as casos_router
+from .api.routers.flujos import router as flujos_router
+from .api.routers.procesos import router as procesos_router
+from .api.routers.tareas import router as tareas_router
 
 
 app = FastAPI(
@@ -21,6 +24,9 @@ async def index(request: Request) -> HTMLResponse:
 
 
 app.include_router(auth_router, prefix="/api")
-app.include_router(contratos_router, prefix="/api")
+app.include_router(procesos_router, prefix="/api")
+app.include_router(flujos_router, prefix="/api")
+app.include_router(tareas_router, prefix="/api")
+app.include_router(casos_router, prefix="/api")
 
 

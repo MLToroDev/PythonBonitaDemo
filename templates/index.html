@@ -49,6 +49,23 @@
         align-items: center;
       }
 
+      .user-info button {
+        background: #fff;
+        color: #0a336d;
+        border-radius: 6px;
+        border: 1px solid #fff;
+        padding: 0.4rem 0.8rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s, color 0.2s, opacity 0.2s;
+      }
+
+      .user-info button:hover {
+        background: transparent;
+        color: #fff;
+        opacity: 0.85;
+      }
+
       nav {
         background: #062651;
         padding: 0.5rem 2rem;
@@ -71,6 +88,10 @@
       nav button:hover {
         background: #fff;
         color: #062651;
+      }
+
+      nav[hidden] {
+        display: none;
       }
 
       main {
@@ -236,6 +257,25 @@
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       }
 
+      #app-content[hidden] {
+        display: none;
+      }
+
+      #auth-card form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      #auth-card .credentials-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      #auth-card small {
+        color: #475569;
+      }
+
       @media (max-width: 768px) {
         header,
         nav {
@@ -256,102 +296,112 @@
     <header>
       <h1>Bonita Control Center <span>FastAPI Prototype</span></h1>
       <div class="user-info">
-        <span>Sesión: <strong id="session-user">Usuario API</strong></span>
+        <span>Sesión: <strong id="session-user">Sin sesión</strong></span>
+        <button id="logout-btn" hidden>Salir</button>
         <span id="last-sync">Sincronización pendiente…</span>
       </div>
     </header>
 
-    <nav>
-      <button class="tab-btn active" data-target="view-processes">Procesos</button>
+    <nav id="main-nav" hidden>
+      <button class="tab-btn active" data-target="view-flows">Flujos</button>
       <button class="tab-btn" data-target="view-tasks">Tareas</button>
       <button class="tab-btn" data-target="view-cases">Casos</button>
     </nav>
 
     <main>
-      <section id="view-processes" class="view active">
-        <div class="card">
-          <div class="card-header">
-            <h2>Procesos desplegados</h2>
-            <div class="actions">
-              <button class="secondary" id="refresh-processes">Actualizar</button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="processes-status" class="status-bar" hidden></div>
-            <table id="processes-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Versión</th>
-                  <th>Estado</th>
-                  <th>ID</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+      <section class="card" id="auth-card">
+        <div class="card-header">
+          <h2>Autenticación en Bonita</h2>
         </div>
-
-        <div class="card" style="margin-top: 1.5rem;">
-          <div class="card-header">
-            <h2>Instanciar proceso</h2>
-          </div>
-          <div class="card-body">
-            <div id="start-status" class="status-bar" hidden></div>
-            <form class="inline" id="start-form">
+        <div class="card-body">
+          <div id="auth-status" class="status-bar" hidden></div>
+          <form id="login-form">
+            <div class="credentials-grid">
               <div>
-                <label for="process-select">Proceso</label>
-                <select id="process-select">
-                  <option value="">Selecciona un proceso</option>
-                </select>
+                <label for="login-username">Usuario</label>
+                <input id="login-username" name="username" placeholder="ej: walter.bates" autocomplete="username" />
               </div>
               <div>
-                <label for="process-variables">Variables (JSON)</label>
-                <textarea
-                  id="process-variables"
-                  placeholder='{"solicitud": "demo"}'
-                ></textarea>
+                <label for="login-password">Contraseña</label>
+                <input id="login-password" name="password" type="password" placeholder="••••••" autocomplete="current-password" />
               </div>
-              <div class="actions">
-                <button type="submit" class="primary">Iniciar instancia</button>
-                <button type="reset" class="secondary">Limpiar</button>
-              </div>
-            </form>
-          </div>
+            </div>
+            <div class="actions">
+              <button type="submit" class="primary">Iniciar sesión y obtener token</button>
+              <button type="reset" class="secondary">Limpiar</button>
+            </div>
+            <small>
+              El token JWT se conserva en la sesión actual del navegador. Cambia de usuario iniciando sesión nuevamente con credenciales distintas.
+            </small>
+          </form>
         </div>
       </section>
 
-      <section id="view-tasks" class="view">
-        <div class="grid-two">
+      <div id="app-content" hidden>
+        <section id="view-flows" class="view active">
           <div class="card">
             <div class="card-header">
-              <h2>Tareas disponibles</h2>
+              <h2>Flujos semánticos disponibles</h2>
+              <div class="actions">
+                <button class="secondary" id="refresh-flows">Actualizar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="flows-status" class="status-bar" hidden></div>
+              <table id="flows-table">
+                <thead>
+                  <tr>
+                    <th>Flujo</th>
+                    <th>Disponible</th>
+                    <th>Proceso Bonita</th>
+                    <th>Versión</th>
+                    <th>Process ID</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+              <h2>Iniciar flujo</h2>
+            </div>
+            <div class="card-body">
+              <div id="start-status" class="status-bar" hidden></div>
+              <form class="inline" id="start-form">
+                <div>
+                  <label for="flow-select">Flujo</label>
+                  <select id="flow-select">
+                    <option value="">Selecciona un flujo disponible</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="flow-variables">Contrato (JSON)</label>
+                  <textarea
+                    id="flow-variables"
+                    placeholder='{"solicitud": "demo"}'
+                  ></textarea>
+                </div>
+                <div class="actions">
+                  <button type="submit" class="primary">Iniciar instancia</button>
+                  <button type="reset" class="secondary">Limpiar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-tasks" class="view">
+          <div class="card">
+            <div class="card-header">
+              <h2>Tareas pendientes para el usuario</h2>
               <div class="actions">
                 <button class="secondary" id="refresh-tasks">Actualizar</button>
               </div>
             </div>
             <div class="card-body">
-              <form class="inline" id="task-filter-form">
-                <div>
-                  <label for="task-state">Estado</label>
-                  <select id="task-state">
-                    <option value="ready">Ready</option>
-                    <option value="assigned">Assigned</option>
-                    <option value="completed">Completed</option>
-                    <option value="">Todos</option>
-                  </select>
-                </div>
-                <div>
-                  <label for="task-user">ID usuario (opcional)</label>
-                  <input id="task-user" placeholder="ej: 4" />
-                </div>
-                <div class="actions">
-                  <button type="submit" class="primary">Filtrar</button>
-                  <button type="reset" class="secondary">Limpiar</button>
-                </div>
-              </form>
-
               <div id="tasks-status" class="status-bar" hidden></div>
               <table id="tasks-table">
                 <thead>
@@ -366,70 +416,85 @@
                 </thead>
                 <tbody></tbody>
               </table>
+
+              <div class="card" style="margin-top: 1.5rem; box-shadow: none; border: none;">
+                <div class="card-body" style="padding: 0;">
+                  <div id="task-action-status" class="status-bar" hidden></div>
+                  <form class="inline" id="complete-form">
+                    <h3>Completar tarea</h3>
+                    <label for="complete-task-id">ID tarea</label>
+                    <input id="complete-task-id" placeholder="ID numérico" />
+                    <label for="complete-variables">Contrato (JSON)</label>
+                    <textarea
+                      id="complete-variables"
+                      placeholder='{"aprobado": true}'
+                    ></textarea>
+                    <button type="submit" class="primary">Completar</button>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
+        <section id="view-cases" class="view">
           <div class="card">
             <div class="card-header">
-              <h2>Actualizar tarea</h2>
+              <h2>Estado de caso</h2>
             </div>
             <div class="card-body">
-              <div id="task-action-status" class="status-bar" hidden></div>
-              <form class="inline" id="assign-form">
-                <h3>Reclamar tarea</h3>
-                <label for="assign-task-id">ID tarea</label>
-                <input id="assign-task-id" placeholder="ID numérico" />
-                <label for="assign-user-id">ID usuario</label>
-                <input id="assign-user-id" placeholder="Usuario asignado" />
-                <button type="submit" class="primary">Asignar</button>
+              <div id="case-status" class="status-bar" hidden></div>
+              <form class="inline" id="case-form">
+                <div>
+                  <label for="case-id">ID de caso</label>
+                  <input id="case-id" placeholder="Ej: 101" />
+                </div>
+                <div class="actions">
+                  <button type="submit" class="primary">Consultar</button>
+                  <button type="reset" class="secondary">Limpiar</button>
+                </div>
               </form>
 
-              <form class="inline" id="complete-form" style="margin-top: 1.5rem;">
-                <h3>Completar tarea</h3>
-                <label for="complete-task-id">ID tarea</label>
-                <input id="complete-task-id" placeholder="ID numérico" />
-                <label for="complete-variables">Variables (JSON)</label>
-                <textarea
-                  id="complete-variables"
-                  placeholder='{"aprobado": true}'
-                ></textarea>
-                <button type="submit" class="primary">Completar</button>
-              </form>
+              <div style="margin-top: 1.5rem;">
+                <h3>Detalle</h3>
+                <pre id="case-output" style="background: #0b1733; color: #cbd5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; min-height: 180px;"></pre>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="view-cases" class="view">
-        <div class="card">
-          <div class="card-header">
-            <h2>Estado de caso</h2>
-          </div>
-          <div class="card-body">
-            <div id="case-status" class="status-bar" hidden></div>
-            <form class="inline" id="case-form">
-              <div>
-                <label for="case-id">ID de caso</label>
-                <input id="case-id" placeholder="Ej: 101" />
-              </div>
-              <div class="actions">
-                <button type="submit" class="primary">Consultar</button>
-                <button type="reset" class="secondary">Limpiar</button>
-              </div>
-            </form>
-
-            <div style="margin-top: 1.5rem;">
-              <h3>Detalle</h3>
-              <pre id="case-output" style="background: #0b1733; color: #cbd5f5; padding: 1rem; border-radius: 8px; overflow-x: auto; min-height: 180px;"></pre>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
 
     <script>
       const tabButtons = document.querySelectorAll(".tab-btn");
       const views = document.querySelectorAll(".view");
+      const navigation = document.getElementById("main-nav");
+
+      const sessionUser = document.getElementById("session-user");
+      const logoutBtn = document.getElementById("logout-btn");
+      const lastSync = document.getElementById("last-sync");
+
+      const loginForm = document.getElementById("login-form");
+      const loginUsername = document.getElementById("login-username");
+      const loginPassword = document.getElementById("login-password");
+      const authStatus = document.getElementById("auth-status");
+      const appContent = document.getElementById("app-content");
+
+      const flowsTableBody = document.querySelector("#flows-table tbody");
+      const flowsStatus = document.getElementById("flows-status");
+      const flowSelect = document.getElementById("flow-select");
+      const startStatus = document.getElementById("start-status");
+
+      const tasksTableBody = document.querySelector("#tasks-table tbody");
+      const tasksStatus = document.getElementById("tasks-status");
+      const taskActionStatus = document.getElementById("task-action-status");
+
+      const caseOutput = document.getElementById("case-output");
+      const caseStatus = document.getElementById("case-status");
+
+      let accessToken = "";
+      let authenticatedUser = "";
+      let cachedFlows = [];
 
       const activateTab = (targetId) => {
         tabButtons.forEach((button) => {
@@ -466,76 +531,133 @@
         element.classList.remove("error", "success");
       }
 
+      function resetDataViews() {
+        flowsTableBody.innerHTML = "";
+        flowSelect.innerHTML = '<option value="">Selecciona un flujo disponible</option>';
+        tasksTableBody.innerHTML = "";
+        caseOutput.textContent = "";
+        cachedFlows = [];
+        clearStatus(flowsStatus);
+        clearStatus(startStatus);
+        clearStatus(tasksStatus);
+        clearStatus(taskActionStatus);
+        clearStatus(caseStatus);
+      }
+
+      function updateAuthUI() {
+        const isAuthenticated = Boolean(accessToken);
+        sessionUser.textContent = isAuthenticated ? authenticatedUser : "Sin sesión";
+        logoutBtn.hidden = !isAuthenticated;
+        navigation.hidden = !isAuthenticated;
+        appContent.hidden = !isAuthenticated;
+        if (!isAuthenticated) {
+          lastSync.textContent = "Sincronización pendiente…";
+          resetDataViews();
+        }
+      }
+
+      function handleUnauthorized(message = "Sesión expirada. Inicia nuevamente.") {
+        accessToken = "";
+        authenticatedUser = "";
+        updateAuthUI();
+        setStatus(authStatus, message, "error");
+      }
+
       async function callApi(url, options = {}) {
+        const headers = {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        };
+        if (accessToken) {
+          headers.Authorization = `Bearer ${accessToken}`;
+        }
+
         try {
           const response = await fetch(url, {
-            headers: { "Content-Type": "application/json" },
             ...options,
+            headers,
           });
+
           if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(detail || response.statusText);
+            if (response.status === 401) {
+              handleUnauthorized("Sesión no válida o expirada.");
+            }
+            const detailText = await response.text();
+            let message = detailText || response.statusText;
+            try {
+              const parsed = JSON.parse(detailText);
+              if (parsed && parsed.detail) {
+                message = typeof parsed.detail === "string" ? parsed.detail : JSON.stringify(parsed.detail);
+              } else if (parsed && parsed.message) {
+                message = parsed.message;
+              }
+            } catch (_) {
+              // respuesta en texto plano
+            }
+            throw new Error(message);
           }
+
           const text = await response.text();
           if (!text) return {};
-          return JSON.parse(text);
+          try {
+            return JSON.parse(text);
+          } catch (_) {
+            return text;
+          }
         } catch (error) {
           throw error;
         }
       }
 
-      const processesTableBody = document.querySelector("#processes-table tbody");
-      const processesStatus = document.getElementById("processes-status");
-      const processSelect = document.getElementById("process-select");
-      const startStatus = document.getElementById("start-status");
-      const tasksTableBody = document.querySelector("#tasks-table tbody");
-      const tasksStatus = document.getElementById("tasks-status");
-      const taskActionStatus = document.getElementById("task-action-status");
-      const caseOutput = document.getElementById("case-output");
-      const caseStatus = document.getElementById("case-status");
-      const lastSync = document.getElementById("last-sync");
+      function renderFlows(flows) {
+        flowsTableBody.innerHTML = "";
+        flowSelect.innerHTML = '<option value="">Selecciona un flujo disponible</option>';
 
-      function renderProcesses(processes) {
-        processesTableBody.innerHTML = "";
-        processSelect.innerHTML = '<option value="">Selecciona un proceso</option>';
-
-        processes.forEach((process) => {
+        flows.forEach((flow) => {
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${process.displayName || process.name}</td>
-            <td>${process.version}</td>
-            <td>${process.activationState || "N/D"}</td>
-            <td>${process.id}</td>
+            <td>${flow.display_name}</td>
+            <td>${flow.disponible ? "Sí" : "No"}</td>
+            <td>${flow.bonita_process_name || "-"}</td>
+            <td>${flow.bonita_version || "-"}</td>
+            <td>${flow.bonita_process_id || "-"}</td>
             <td>
               <div class="actions">
-                <button class="primary start-process-btn" data-id="${process.id}">
+                <button class="primary start-flow-btn" data-slug="${flow.slug}" ${flow.disponible ? "" : "disabled"}>
                   Iniciar
                 </button>
               </div>
             </td>
           `;
-          processesTableBody.appendChild(row);
+          flowsTableBody.appendChild(row);
 
-          const option = document.createElement("option");
-          option.value = process.id;
-          option.textContent = `${process.displayName || process.name} (v${process.version})`;
-          processSelect.appendChild(option);
+          if (flow.disponible) {
+            const option = document.createElement("option");
+            option.value = flow.slug;
+            option.textContent = flow.display_name;
+            flowSelect.appendChild(option);
+          }
         });
 
-        document.querySelectorAll(".start-process-btn").forEach((btn) => {
+        document.querySelectorAll(".start-flow-btn").forEach((btn) => {
           btn.addEventListener("click", async () => {
+            if (btn.disabled) return;
             clearStatus(startStatus);
-            const processId = btn.dataset.id;
+            const slug = btn.dataset.slug;
             try {
-              const result = await callApi(`/api/bonita/processes/${processId}/start`, {
-                method: "POST",
-                body: JSON.stringify({}),
-              });
-              setStatus(startStatus, `Instancia creada con ID ${result.caseId || result.id}`, "success");
+              await startFlow(slug, {});
+              setStatus(startStatus, `Instancia del flujo '${slug}' creada exitosamente.`, "success");
             } catch (error) {
-              setStatus(startStatus, `Error iniciando proceso: ${error}`, "error");
+              setStatus(startStatus, `Error iniciando flujo: ${error.message || error}`, "error");
             }
           });
+        });
+      }
+
+      async function startFlow(flowSlug, contractPayload) {
+        return callApi(`/api/flujos/${flowSlug}/iniciar`, {
+          method: "POST",
+          body: JSON.stringify({ contract_inputs: contractPayload }),
         });
       }
 
@@ -544,15 +666,15 @@
         tasks.forEach((task) => {
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${task.displayName || task.name}</td>
-            <td>${task.processDefinitionId || "N/D"}</td>
+            <td>${task.display_name || task.name}</td>
+            <td>${task.metadata?.processDefinitionId || task.metadata?.process_id || task.processDefinitionId || "N/D"}</td>
             <td>${task.state}</td>
             <td>${task.assigned_id || "-"}</td>
             <td>${task.id}</td>
             <td>
               <div class="actions">
-                <button class="secondary fill-task-btn" data-id="${task.id}">
-                  Rellenar formularios
+                <button class="secondary prepare-task-btn" data-id="${task.id}">
+                  Preparar
                 </button>
               </div>
             </td>
@@ -560,148 +682,217 @@
           tasksTableBody.appendChild(row);
         });
 
-        document.querySelectorAll(".fill-task-btn").forEach((btn) => {
+        document.querySelectorAll(".prepare-task-btn").forEach((btn) => {
           btn.addEventListener("click", () => {
             document.getElementById("complete-task-id").value = btn.dataset.id;
             setStatus(taskActionStatus, `Listo para completar la tarea ${btn.dataset.id}`, "info");
+            activateTab("view-tasks");
           });
         });
       }
 
-      async function loadProcesses() {
-        setStatus(processesStatus, "Consultando procesos…");
+      async function loadFlows() {
+        setStatus(flowsStatus, "Consultando flujos…");
         try {
-          const data = await callApi("/api/bonita/processes");
-          renderProcesses(data);
-          setStatus(processesStatus, `Procesos cargados (${data.length}).`, "success");
-        } catch (error) {
-          setStatus(processesStatus, `Error al obtener procesos: ${error}`, "error");
-        } finally {
+          const data = await callApi("/api/procesos-disponibles");
+          cachedFlows = data;
+          renderFlows(data);
+          const disponibles = data.filter((flow) => flow.disponible).length;
+          setStatus(flowsStatus, `Flujos configurados: ${disponibles}/${data.length}.`, "success");
           lastSync.textContent = `Última sincronización: ${new Date().toLocaleString()}`;
-        }
-      }
-
-      async function loadTasks(filters = {}) {
-        const params = new URLSearchParams();
-        if (filters.state) params.append("state", filters.state);
-        if (filters.user_id) params.append("user_id", filters.user_id);
-
-        setStatus(tasksStatus, "Consultando tareas…");
-        try {
-          const data = await callApi(`/api/bonita/tasks?${params.toString()}`);
-          renderTasks(data);
-          setStatus(tasksStatus, `Tareas cargadas (${data.length}).`, "success");
         } catch (error) {
-          setStatus(tasksStatus, `Error al obtener tareas: ${error}`, "error");
+          setStatus(flowsStatus, `Error al obtener flujos: ${error.message || error}`, "error");
         }
       }
 
-      document.getElementById("refresh-processes").addEventListener("click", loadProcesses);
-      document.getElementById("refresh-tasks").addEventListener("click", () =>
-        loadTasks({
-          state: document.getElementById("task-state").value,
-          user_id: document.getElementById("task-user").value.trim(),
-        })
-      );
+      async function loadTasks() {
+        setStatus(tasksStatus, "Consultando tareas pendientes…");
+        try {
+          const data = await callApi("/api/tareas/pendientes");
+          renderTasks(data);
+          setStatus(tasksStatus, `Tareas pendientes: ${data.length}.`, "success");
+        } catch (error) {
+          setStatus(tasksStatus, `Error al obtener tareas: ${error.message || error}`, "error");
+        }
+      }
+
+      function initializeData() {
+        loadFlows();
+        loadTasks();
+      }
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const username = loginUsername.value.trim();
+        const password = loginPassword.value;
+
+        if (!username || !password) {
+          setStatus(authStatus, "Ingresa usuario y contraseña de Bonita.", "error");
+          return;
+        }
+
+        setStatus(authStatus, "Autenticando con Bonita…");
+        try {
+          const formData = new URLSearchParams();
+          formData.append("username", username);
+          formData.append("password", password);
+
+          const response = await fetch("/api/auth/token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData.toString(),
+          });
+
+          if (!response.ok) {
+            const detailText = await response.text();
+            let message = detailText || "No se pudo autenticar.";
+            try {
+              const parsed = JSON.parse(detailText);
+              if (parsed && parsed.detail) {
+                message = typeof parsed.detail === "string" ? parsed.detail : JSON.stringify(parsed.detail);
+              } else if (parsed && parsed.message) {
+                message = parsed.message;
+              }
+            } catch (_) {
+              // respuesta en texto plano
+            }
+            throw new Error(message);
+          }
+
+          const data = await response.json();
+          accessToken = data.access_token;
+          authenticatedUser = username;
+          setStatus(authStatus, "Autenticación exitosa. Token activo.", "success");
+          loginForm.reset();
+          updateAuthUI();
+          initializeData();
+        } catch (error) {
+          accessToken = "";
+          authenticatedUser = "";
+          updateAuthUI();
+          setStatus(authStatus, `Error de autenticación: ${error.message || error}`, "error");
+        }
+      });
+
+      loginForm.addEventListener("reset", () => {
+        clearStatus(authStatus);
+      });
+
+      logoutBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        accessToken = "";
+        authenticatedUser = "";
+        updateAuthUI();
+        setStatus(authStatus, "Sesión cerrada correctamente.", "info");
+      });
+
+      document.getElementById("refresh-flows").addEventListener("click", () => {
+        if (!accessToken) {
+          setStatus(authStatus, "Autentícate para consultar flujos.", "error");
+          return;
+        }
+        loadFlows();
+      });
+
+      document.getElementById("refresh-tasks").addEventListener("click", () => {
+        if (!accessToken) {
+          setStatus(authStatus, "Autentícate para consultar tareas.", "error");
+          return;
+        }
+        loadTasks();
+      });
 
       document.getElementById("start-form").addEventListener("submit", async (event) => {
         event.preventDefault();
-        const processId = processSelect.value;
-        if (!processId) {
-          setStatus(startStatus, "Selecciona un proceso para continuar.", "error");
+        if (!accessToken) {
+          setStatus(authStatus, "Inicia sesión para operar con flujos.", "error");
+          return;
+        }
+
+        const flowSlug = flowSelect.value;
+        if (!flowSlug) {
+          setStatus(startStatus, "Selecciona un flujo para continuar.", "error");
           return;
         }
 
         let contractPayload = {};
-        const rawVariables = document.getElementById("process-variables").value;
+        const rawVariables = document.getElementById("flow-variables").value;
         if (rawVariables) {
           try {
             contractPayload = JSON.parse(rawVariables);
-          } catch (error) {
-            setStatus(startStatus, "El JSON de variables no es válido.", "error");
+          } catch (_) {
+            setStatus(startStatus, "El JSON del contrato no es válido.", "error");
             return;
           }
         }
 
-        setStatus(startStatus, "Iniciando proceso…");
+        setStatus(startStatus, "Iniciando flujo…");
         try {
-          const result = await callApi(`/api/bonita/processes/${processId}/start`, {
-            method: "POST",
-            body: JSON.stringify(contractPayload),
-          });
-          setStatus(startStatus, `Proceso iniciado. Case ID: ${result.caseId || result.id}`, "success");
-          const form = event.target;
-          if (form && typeof form.reset === "function") {
-            form.reset();
-          }
+          const response = await startFlow(flowSlug, contractPayload);
+          const caseId = response.case_id || response.metadata?.caseId || response.metadata?.case_id;
+          setStatus(startStatus, `Instancia creada. Case ID: ${caseId || "desconocido"}.`, "success");
+          event.target.reset();
           activateTab("view-tasks");
-          loadTasks({ state: "ready" });
+          loadTasks();
         } catch (error) {
-          setStatus(startStatus, `Error al iniciar: ${error}`, "error");
+          setStatus(startStatus, `Error al iniciar: ${error.message || error}`, "error");
         }
       });
 
-      document.getElementById("task-filter-form").addEventListener("submit", (event) => {
-        event.preventDefault();
-        const state = document.getElementById("task-state").value;
-        const userId = document.getElementById("task-user").value.trim();
-        loadTasks({ state, user_id: userId });
-      });
-
-      document.getElementById("task-filter-form").addEventListener("reset", () => {
-        setTimeout(() => loadTasks({ state: "ready" }), 50);
-      });
-
-      document.getElementById("assign-form").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const taskId = document.getElementById("assign-task-id").value.trim();
-        const userId = document.getElementById("assign-user-id").value.trim();
-        if (!taskId || !userId) {
-          setStatus(taskActionStatus, "Debes indicar ID de tarea y usuario.", "error");
-          return;
-        }
-
-        setStatus(taskActionStatus, "Asignando tarea…");
-        try {
-          await callApi(`/api/bonita/tasks/${taskId}/assign`, {
-            method: "POST",
-            body: JSON.stringify({ user_id: userId }),
-          });
-          setStatus(taskActionStatus, `Tarea ${taskId} asignada a ${userId}.`, "success");
-          loadTasks({ state: document.getElementById("task-state").value });
-        } catch (error) {
-          setStatus(taskActionStatus, `Error al asignar: ${error}`, "error");
-        }
+      document.getElementById("start-form").addEventListener("reset", () => {
+        clearStatus(startStatus);
       });
 
       document.getElementById("complete-form").addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!accessToken) {
+          setStatus(authStatus, "Inicia sesión para completar tareas.", "error");
+          return;
+        }
         const taskId = document.getElementById("complete-task-id").value.trim();
         if (!taskId) {
-          setStatus(taskActionStatus, "Debes indicar el ID de la tarea a completar.", "error");
+          setStatus(taskActionStatus, "Debes indicar el ID de la tarea.", "error");
           return;
+        }
+
+        let contractInputs = {};
+        const rawVariables = document.getElementById("complete-variables").value;
+        if (rawVariables) {
+          try {
+            contractInputs = JSON.parse(rawVariables);
+          } catch (_) {
+            setStatus(taskActionStatus, "El JSON del contrato no es válido.", "error");
+            return;
+          }
         }
 
         setStatus(taskActionStatus, `Completando tarea ${taskId}…`);
         try {
-          await callApi(`/api/bonita/tasks/${taskId}/complete`, {
+          await callApi(`/api/tareas/${taskId}/completar`, {
             method: "POST",
             body: JSON.stringify({
-              contract_inputs: {
-                responsable: "22",
-                observacionesLider: "asdasd",
-              },
+              contract_inputs: contractInputs,
             }),
           });
           setStatus(taskActionStatus, `Tarea ${taskId} completada.`, "success");
-          loadTasks({ state: document.getElementById("task-state").value });
+          loadTasks();
         } catch (error) {
-          setStatus(taskActionStatus, `Error al completar: ${error}`, "error");
+          setStatus(taskActionStatus, `Error al completar: ${error.message || error}`, "error");
         }
+      });
+
+      document.getElementById("complete-form").addEventListener("reset", () => {
+        clearStatus(taskActionStatus);
       });
 
       document.getElementById("case-form").addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!accessToken) {
+          setStatus(authStatus, "Autentícate para consultar casos.", "error");
+          return;
+        }
         const caseId = document.getElementById("case-id").value.trim();
         if (!caseId) {
           setStatus(caseStatus, "Debes indicar un ID de caso.", "error");
@@ -710,11 +901,11 @@
 
         setStatus(caseStatus, "Consultando caso…");
         try {
-          const result = await callApi(`/api/bonita/cases/${caseId}`);
+          const result = await callApi(`/api/casos/${caseId}`);
           clearStatus(caseStatus);
           caseOutput.textContent = JSON.stringify(result, null, 2);
         } catch (error) {
-          setStatus(caseStatus, `Error al consultar caso: ${error}`, "error");
+          setStatus(caseStatus, `Error al consultar caso: ${error.message || error}`, "error");
           caseOutput.textContent = "";
         }
       });
@@ -724,8 +915,7 @@
         caseOutput.textContent = "";
       });
 
-      loadProcesses();
-      loadTasks({ state: "ready" });
+      updateAuthUI();
     </script>
   </body>
 </html>

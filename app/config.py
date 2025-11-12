@@ -1,3 +1,4 @@
+import json
 import os
 from dataclasses import dataclass
 from functools import lru_cache
@@ -14,6 +15,7 @@ class Settings:
     secret_key: str
     jwt_algorithm: str
     access_token_expire_minutes: int
+    flow_definitions: dict[str, dict[str, object]]
 
 
 def _get_env_variable(key: str, *, default: str | None = None) -> str:
@@ -39,11 +41,22 @@ def get_settings() -> Settings:
             "La variable ACCESS_TOKEN_EXPIRE_MINUTES debe ser un entero."
         ) from exc
 
+    flow_definitions_raw = os.getenv("FLOW_DEFINITIONS", "{}")
+    try:
+        flow_definitions = json.loads(flow_definitions_raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "La variable FLOW_DEFINITIONS debe contener un JSON válido."
+        ) from exc
+    if not isinstance(flow_definitions, dict):
+        raise RuntimeError("FLOW_DEFINITIONS debe ser un objeto JSON (dict).")
+
     return Settings(
         bonita_url=_get_env_variable("BONITA_URL"),
         secret_key=_get_env_variable("SECRET_KEY"),
         jwt_algorithm=_get_env_variable("JWT_ALGORITHM", default="HS256"),
         access_token_expire_minutes=access_token_expire_minutes,
+        flow_definitions=flow_definitions,
     )
 
 

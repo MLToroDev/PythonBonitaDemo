@@ -3,11 +3,11 @@
     "name": "Python Bonita Demo",
     "_postman_id": "9c3d3315-40f4-4d88-9f30-collection",
     "version": {
-      "major": 1,
+      "major": 2,
       "minor": 0,
       "patch": 0
     },
-    "description": "Colección de pruebas para la API FastAPI que actúa como fachada de Bonita BPM.",
+    "description": "Colección de pruebas para la API FastAPI que actúa como embajador de Bonita BPM.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -125,29 +125,18 @@
       ]
     },
     {
-      "name": "Listar procesos",
+      "name": "Listar flujos semánticos",
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/bonita/processes",
+          "raw": "{{base_url}}/api/procesos-disponibles",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "processes"
-          ],
-          "query": [
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "count",
-              "value": "10"
-            }
+            "procesos-disponibles"
           ]
         },
         "auth": {
@@ -180,29 +169,23 @@
       ]
     },
     {
-      "name": "Listar procesos - token inválido",
+      "name": "Listar flujos - token inválido",
       "request": {
         "method": "GET",
-        "header": [],
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{invalid_token}}"
+          }
+        ],
         "url": {
-          "raw": "{{base_url}}/api/bonita/processes",
+          "raw": "{{base_url}}/api/procesos-disponibles",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "processes"
-          ]
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{invalid_token}}",
-              "type": "string"
-            }
+            "procesos-disponibles"
           ]
         }
       },
@@ -214,10 +197,6 @@
             "exec": [
               "pm.test(\"Estado 401 por token inválido\", function () {",
               "    pm.response.to.have.status(401);",
-              "});",
-              "",
-              "pm.test(\"Mensaje de error presente\", function () {",
-              "    pm.expect(pm.response.json()).to.have.property('detail');",
               "});"
             ]
           }
@@ -225,7 +204,7 @@
       ]
     },
     {
-      "name": "Instanciar proceso",
+      "name": "Iniciar flujo",
       "request": {
         "method": "POST",
         "header": [
@@ -236,19 +215,18 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"contractData\": {\n    \"exampleField\": \"valor\"\n  }\n}"
+          "raw": "{\n  \"contract_inputs\": {\n    \"exampleField\": \"valor\"\n  }\n}"
         },
         "url": {
-          "raw": "{{base_url}}/api/bonita/processes/{{process_id}}/start",
+          "raw": "{{base_url}}/api/flujos/{{flow_slug}}/iniciar",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "processes",
-            "{{process_id}}",
-            "start"
+            "flujos",
+            "{{flow_slug}}",
+            "iniciar"
           ]
         },
         "auth": {
@@ -274,7 +252,7 @@
               "",
               "pm.test(\"Incluye caseId en la respuesta\", function () {",
               "    var body = pm.response.json();",
-              "    pm.expect(body).to.have.property('caseId');",
+              "    pm.expect(body).to.have.property('case_id');",
               "});"
             ]
           }
@@ -282,25 +260,19 @@
       ]
     },
     {
-      "name": "Listar tareas",
+      "name": "Listar tareas pendientes",
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/bonita/tasks?state=ready",
+          "raw": "{{base_url}}/api/tareas/pendientes",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "tasks"
-          ],
-          "query": [
-            {
-              "key": "state",
-              "value": "ready"
-            }
+            "tareas",
+            "pendientes"
           ]
         },
         "auth": {
@@ -324,64 +296,8 @@
               "    pm.response.to.have.status(200);",
               "});",
               "",
-              "pm.test(\"La respuesta es un arreglo\", function () {",
+              "pm.test(\"Respuesta es un arreglo\", function () {",
               "    pm.expect(pm.response.json()).to.be.an('array');",
-              "});"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Asignar tarea",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"user_id\": \"{{assignee_id}}\"\n}"
-        },
-        "url": {
-          "raw": "{{base_url}}/api/bonita/tasks/{{task_id}}/assign",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "bonita",
-            "tasks",
-            "{{task_id}}",
-            "assign"
-          ]
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{access_token}}",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test(\"Estado 204\", function () {",
-              "    pm.response.to.have.status(204);",
-              "});",
-              "",
-              "pm.test(\"Respuesta sin cuerpo\", function () {",
-              "    pm.response.to.not.have.body();",
               "});"
             ]
           }
@@ -400,19 +316,18 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"contract_inputs\": {\n    \"field\": \"valor\"\n  },\n  \"variables\": {}\n}"
+          "raw": "{\n  \"contract_inputs\": {\n    \"field\": \"valor\"\n  }\n}"
         },
         "url": {
-          "raw": "{{base_url}}/api/bonita/tasks/{{task_id}}/complete",
+          "raw": "{{base_url}}/api/tareas/{{task_id}}/completar",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "tasks",
+            "tareas",
             "{{task_id}}",
-            "complete"
+            "completar"
           ]
         },
         "auth": {
@@ -434,10 +349,6 @@
             "exec": [
               "pm.test(\"Estado 204\", function () {",
               "    pm.response.to.have.status(204);",
-              "});",
-              "",
-              "pm.test(\"Respuesta sin cuerpo\", function () {",
-              "    pm.response.to.not.have.body();",
               "});"
             ]
           }
@@ -450,21 +361,14 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/bonita/cases/{{case_id}}?include_variables=true",
+          "raw": "{{base_url}}/api/casos/{{case_id}}",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "api",
-            "bonita",
-            "cases",
+            "casos",
             "{{case_id}}"
-          ],
-          "query": [
-            {
-              "key": "include_variables",
-              "value": "true"
-            }
           ]
         },
         "auth": {
@@ -512,16 +416,8 @@
       "value": "bpm"
     },
     {
-      "key": "access_token",
-      "value": ""
-    },
-    {
-      "key": "invalid_token",
-      "value": "token_invalido"
-    },
-    {
-      "key": "process_id",
-      "value": "REEMPLAZAR_PROCESS_ID"
+      "key": "flow_slug",
+      "value": "vacaciones"
     },
     {
       "key": "task_id",
@@ -532,8 +428,12 @@
       "value": "REEMPLAZAR_CASE_ID"
     },
     {
-      "key": "assignee_id",
-      "value": "REEMPLAZAR_USER_ID"
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "invalid_token",
+      "value": "token_invalido"
     }
   ]
 }

@@ -5,8 +5,9 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 
-
-load_dotenv()
+# Cargar variables de entorno con codificación UTF-8 explícita
+# Esto asegura que caracteres especiales se lean correctamente en Windows
+load_dotenv(encoding='utf-8')
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,9 @@ class Settings:
     jwt_algorithm: str
     access_token_expire_minutes: int
     flow_definitions: dict[str, dict[str, object]]
+    database_url: str
+    database_schema: str = "SeguimientoDAP"
+    debug: bool = False
 
 
 def _get_env_variable(key: str, *, default: str | None = None) -> str:
@@ -51,12 +55,22 @@ def get_settings() -> Settings:
     if not isinstance(flow_definitions, dict):
         raise RuntimeError("FLOW_DEFINITIONS debe ser un objeto JSON (dict).")
 
+    database_url = _get_env_variable(
+        "DATABASE_URL",
+        default="postgresql://postgres:postgres@localhost:5432/bonita_bridge"
+    )
+    database_schema = os.getenv("DATABASE_SCHEMA", "SeguimientoDAP")
+    debug = os.getenv("DEBUG", "False").lower() == "true"
+
     return Settings(
         bonita_url=_get_env_variable("BONITA_URL"),
         secret_key=_get_env_variable("SECRET_KEY"),
         jwt_algorithm=_get_env_variable("JWT_ALGORITHM", default="HS256"),
         access_token_expire_minutes=access_token_expire_minutes,
         flow_definitions=flow_definitions,
+        database_url=database_url,
+        database_schema=database_schema,
+        debug=debug,
     )
 
 

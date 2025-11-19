@@ -7,6 +7,8 @@ from .api.routers.casos import router as casos_router
 from .api.routers.flujos import router as flujos_router
 from .api.routers.procesos import router as procesos_router
 from .api.routers.tareas import router as tareas_router
+from .api.routers.bdm_contratos import router as bdm_contratos_router
+from .api.routers.bdm_informes import router as bdm_informes_router
 
 
 app = FastAPI(
@@ -28,5 +30,8 @@ app.include_router(procesos_router, prefix="/api")
 app.include_router(flujos_router, prefix="/api")
 app.include_router(tareas_router, prefix="/api")
 app.include_router(casos_router, prefix="/api")
+# Servicio Puente - Endpoints que reemplazan el BDM
+app.include_router(bdm_contratos_router, prefix="/api")
+app.include_router(bdm_informes_router, prefix="/api")
 
 

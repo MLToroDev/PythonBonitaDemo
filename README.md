@@ -10,17 +10,39 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
 │   ├── api
 │   │   ├── dto                # DTOs Pydantic
 │   │   └── routers            # Endpoints FastAPI
+│   │       ├── bdm_contratos.py    # Servicio Puente - Contratos
+│   │       └── bdm_informes.py     # Servicio Puente - Informes
 │   ├── domain                 # Lógica de negocio por dominios
 │   ├── infrastructure         # Integraciones concretas (Bonita)
+│   ├── models                 # Modelos SQLAlchemy (BDM)
+│   ├── schemas                # Schemas Pydantic (validación)
+│   ├── repositories           # Repositorios de acceso a datos
+│   ├── services               # Servicios de lógica de negocio
 │   ├── config.py              # Carga de variables de entorno
+│   ├── database.py            # Configuración PostgreSQL
 │   ├── dependencies.py        # Inyección de servicios/repositorios
 │   └── main.py                # Punto de entrada FastAPI
+├── alembic                    # Migraciones de base de datos
+├── scripts                    # Scripts de utilidad
 ├── docs                       # Documentación del proyecto
+│   └── SERVICIO_PUENTE.md     # Documentación del Servicio Puente
 ├── templates                  # UI mínima para probar la API
 ├── env.example                # Ejemplo de configuración (.env)
 ├── requirements.txt           # Dependencias del proyecto
 └── Dockerfile                 # Contenedor opcional de despliegue
 ```
+
+### 🎯 Servicio Puente (Nuevo)
+
+El proyecto ahora incluye un **Servicio Puente** que reemplaza completamente el BDM de Bonita:
+
+- ✅ **Modelos SQLAlchemy** - Representación de tablas en PostgreSQL
+- ✅ **Schemas Pydantic** - Validación y serialización
+- ✅ **Repositorios** - Acceso aislado a datos
+- ✅ **Servicios** - Lógica de negocio
+- ✅ **Routers REST** - Endpoints limpios y documentados
+
+**Ver documentación completa**: [docs/SERVICIO_PUENTE.md](docs/SERVICIO_PUENTE.md)
 
 ## ⚙️ Configuración Inicial
 
@@ -40,7 +62,7 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
 
 3. **Configura las variables de entorno**
 
-   Copia `env.example` a `.env` y ajusta los valores según tu instalación de Bonita:
+   Copia `env.example` a `.env` y ajusta los valores según tu instalación:
 
    ```powershell
    Copy-Item env.example .env
@@ -49,6 +71,32 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
    Variables disponibles:
 
    - `BONITA_URL`: URL base del portal (ej. `http://localhost:8080/bonita`)
+   - `DATABASE_URL`: URL de conexión a PostgreSQL (ej. `postgresql://user:pass@localhost:5432/nombre_bd`)
+   - `DATABASE_SCHEMA`: Nombre del esquema donde se crearán las tablas (por defecto: `bdm`)
+   - `DEBUG`: Modo debug (True/False)
+
+4. **Configura PostgreSQL (para el Servicio Puente)**
+
+   ```powershell
+   # Opción A: Crear una nueva base de datos
+   createdb bonita_bridge
+   
+   # Opción B: Usar una base de datos existente
+   # Las tablas se crearán en un esquema (por defecto: 'bdm')
+   ```
+
+5. **Inicializa el esquema y las tablas**
+
+   ```powershell
+   # Opción A: Script directo (crea el esquema automáticamente)
+   python scripts/init_db.py
+   
+   # Opción B: Usando Alembic (recomendado para producción)
+   alembic revision --autogenerate -m "Initial migration"
+   alembic upgrade head
+   ```
+
+   **Nota**: El script creará automáticamente el esquema especificado en `DATABASE_SCHEMA` (por defecto: `bdm`) si no existe. Puedes usar una base de datos existente y las tablas se crearán en el esquema configurado.
 
 ## 🚀 Puesta en Marcha
 
@@ -81,12 +129,28 @@ Este proyecto ofrece una demostración completa de cómo integrar una aplicació
 
 ## 📡 Endpoints Principales
 
+### Integración con Bonita BPM
+
 - `GET /api/bonita/processes` — Lista de definiciones de procesos disponibles.
 - `POST /api/bonita/processes/{process_id}/start` — Instancia un nuevo caso.
 - `GET /api/bonita/tasks` — Consulta tareas humanas según estado/usuario.
 - `POST /api/bonita/tasks/{task_id}/assign` — Reclama una tarea indicando el `user_id`.
 - `POST /api/bonita/tasks/{task_id}/complete` — Completa una tarea enviando variables del formulario.
 - `GET /api/bonita/cases/{case_id}` — Obtiene el estado del caso y variables asociadas.
+
+### Servicio Puente (Reemplazo del BDM)
+
+- `GET /api/bdm/contratos` — Listar contratos
+- `GET /api/bdm/contratos/{id}` — Obtener contrato
+- `GET /api/bdm/contratos/usuario/{id_usuario_bonita}` — Contratos por usuario Bonita
+- `POST /api/bdm/contratos` — Crear contrato
+- `PUT /api/bdm/contratos/{id}` — Actualizar contrato
+- `DELETE /api/bdm/contratos/{id}` — Eliminar contrato
+- `GET /api/bdm/informes` — Listar informes
+- `GET /api/bdm/informes/contrato/{contrato_id}` — Informes por contrato
+- `POST /api/bdm/informes` — Crear informe
+
+**Ver todos los endpoints en**: http://localhost:8000/docs
 
 ## 🧪 Flujo de Demo Sugerido
 

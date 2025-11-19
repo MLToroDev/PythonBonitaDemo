@@ -1,0 +1,1349 @@
+{
+	"info": {
+		"_postman_id": "contratos-informes-postgresql-2024",
+		"name": "PythonBonitaDemo - Contratos e Informes (PostgreSQL)",
+		"description": "Colección de pruebas para los servicios de Contratos e Informes usando PostgreSQL. Endpoints REST que reemplazan el acceso directo al BDM de Bonita.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01 - Autenticación",
+			"item": [
+				{
+					"name": "Obtener token JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene access_token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"    pm.expect(jsonData).to.have.property('token_type', 'bearer');",
+									"});",
+									"",
+									"pm.test(\"Token tiene formato válido\", function () {",
+									"    var token = pm.response.json().access_token;",
+									"    pm.expect(token).to.be.a('string');",
+									"    pm.expect(token.split('.')).to.have.lengthOf(3);",
+									"});",
+									"",
+									"pm.collectionVariables.set(\"access_token\", pm.response.json().access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{bonita_user}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{bonita_password}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener token - credenciales inválidas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 401 por credenciales inválidas\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de error presente\", function () {",
+									"    pm.expect(pm.response.json()).to.have.property('detail');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{bonita_user}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "credencial_incorrecta",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticación JWT"
+		},
+		{
+			"name": "02 - Contratos",
+			"item": [
+				{
+					"name": "Listar",
+					"item": [
+						{
+							"name": "Listar todos los contratos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un arreglo\", function () {",
+											"    pm.expect(pm.response.json()).to.be.an('array');",
+											"});",
+											"",
+											"if (pm.response.json().length > 0) {",
+											"    var contrato = pm.response.json()[0];",
+											"    pm.test(\"Contrato tiene id\", function () {",
+											"        pm.expect(contrato).to.have.property('id');",
+											"    });",
+											"    pm.collectionVariables.set(\"contrato_id\", contrato.id);",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos?skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar contratos con filtro por estado",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos?skip=0&limit=10&estado=Activo",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "estado",
+											"value": "Activo"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar contratos con filtro por número",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos?skip=0&limit=10&numero_contrato=CONT-2024",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "numero_contrato",
+											"value": "CONT-2024"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar contratos por usuario Bonita",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un arreglo\", function () {",
+											"    pm.expect(pm.response.json()).to.be.an('array');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/usuario/{{id_usuario_bonita}}?skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"usuario",
+										"{{id_usuario_bonita}}"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Contar contratos",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta contiene total\", function () {",
+											"    var body = pm.response.json();",
+											"    pm.expect(body).to.have.property('total');",
+											"    pm.expect(body.total).to.be.a('number');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/count/total",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"count",
+										"total"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Obtener",
+					"item": [
+						{
+							"name": "Obtener contrato por ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.expect(body).to.have.property('numero_contrato');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"{{contrato_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener contrato completo con relaciones",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene relaciones\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.expect(body).to.have.property('perfil_contratista');",
+											"        pm.expect(body).to.have.property('informes');",
+											"        pm.expect(body).to.have.property('obligaciones');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}/completo",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"{{contrato_id}}",
+										"completo"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Crear",
+					"item": [
+						{
+							"name": "Crear nuevo contrato",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 201 o error\", function () {",
+											"    pm.expect([201, 400, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 201) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.collectionVariables.set(\"contrato_id\", body.id);",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"numero_contrato\": \"CONT-2024-TEST-001\",\n  \"fecha_inicio\": \"2024-01-01\",\n  \"estado\": \"Activo\",\n  \"plazo\": \"12 meses\",\n  \"objeto\": \"Prestación de servicios de desarrollo de software\",\n  \"valor_contrato\": 1000000.0,\n  \"supervisor\": 1001,\n  \"perfil_contratista_id\": \"00000000-0000-0000-0000-000000005001\",\n  \"padre_id\": \"00000000-0000-0000-0000-000000000002\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Actualizar",
+					"item": [
+						{
+							"name": "Actualizar contrato",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 400, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"estado\": \"Finalizado\",\n  \"valor_contrato\": 1200000.0\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"{{contrato_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Eliminar",
+					"item": [
+						{
+							"name": "Eliminar contrato",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 204 o 404\", function () {",
+											"    pm.expect([204, 404]).to.include(pm.response.code);",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos",
+										"{{contrato_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Endpoints para gestión de contratos"
+		},
+		{
+			"name": "03 - Informes",
+			"item": [
+				{
+					"name": "Listar",
+					"item": [
+						{
+							"name": "Listar todos los informes",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un arreglo\", function () {",
+											"    pm.expect(pm.response.json()).to.be.an('array');",
+											"});",
+											"",
+											"if (pm.response.json().length > 0) {",
+											"    var informe = pm.response.json()[0];",
+											"    pm.test(\"Informe tiene id\", function () {",
+											"        pm.expect(informe).to.have.property('id');",
+											"    });",
+											"    pm.collectionVariables.set(\"informe_id\", informe.id);",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes?skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar informes con filtro por estado",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes?skip=0&limit=10&estado=Aprobado",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "estado",
+											"value": "Aprobado"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar informes por contrato",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un arreglo\", function () {",
+											"    pm.expect(pm.response.json()).to.be.an('array');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/contrato/{{contrato_id}}?skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"contrato",
+										"{{contrato_id}}"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar informes por período (año)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/periodo/2024?skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"periodo",
+										"2024"
+									],
+									"query": [
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Listar informes por período (año y mes)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/periodo/2024?mes=10&skip=0&limit=10",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"periodo",
+										"2024"
+									],
+									"query": [
+										{
+											"key": "mes",
+											"value": "10"
+										},
+										{
+											"key": "skip",
+											"value": "0"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Contar informes",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta contiene total\", function () {",
+											"    var body = pm.response.json();",
+											"    pm.expect(body).to.have.property('total');",
+											"    pm.expect(body.total).to.be.a('number');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/count/total",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"count",
+										"total"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Obtener",
+					"item": [
+						{
+							"name": "Obtener informe por ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.expect(body).to.have.property('mes');",
+											"        pm.expect(body).to.have.property('anio');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"{{informe_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Obtener informe completo con relaciones",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene relaciones\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.expect(body).to.have.property('contrato');",
+											"        pm.expect(body).to.have.property('ejecuciones');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}/completo",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"{{informe_id}}",
+										"completo"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Crear",
+					"item": [
+						{
+							"name": "Crear nuevo informe",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 201 o error\", function () {",
+											"    pm.expect([201, 400, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 201) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"        pm.collectionVariables.set(\"informe_id\", body.id);",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"valor_periodo\": 500000.0,\n  \"estado\": \"Pendiente\",\n  \"mes\": 12,\n  \"anio\": 2024,\n  \"fecha_inicio_periodo\": \"2024-12-01\",\n  \"fecha_fin_periodo\": \"2024-12-31\",\n  \"contrato_id\": \"00000000-0000-0000-0000-000000004001\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Actualizar",
+					"item": [
+						{
+							"name": "Actualizar informe",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 o 404\", function () {",
+											"    pm.expect([200, 400, 404]).to.include(pm.response.code);",
+											"});",
+											"",
+											"if (pm.response.code === 200) {",
+											"    pm.test(\"Respuesta contiene id\", function () {",
+											"        var body = pm.response.json();",
+											"        pm.expect(body).to.have.property('id');",
+											"    });",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"estado\": \"Aprobado\",\n  \"valor_periodo\": 550000.0\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"{{informe_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Eliminar",
+					"item": [
+						{
+							"name": "Eliminar informe",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 204 o 404\", function () {",
+											"    pm.expect([204, 404]).to.include(pm.response.code);",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"informes",
+										"{{informe_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Endpoints para gestión de informes"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "bonita_user",
+			"value": "walter.bates",
+			"type": "string"
+		},
+		{
+			"key": "bonita_password",
+			"value": "bpm",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contrato_id",
+			"value": "00000000-0000-0000-0000-000000004001",
+			"type": "string"
+		},
+		{
+			"key": "informe_id",
+			"value": "00000000-0000-0000-0000-000000005001",
+			"type": "string"
+		},
+		{
+			"key": "id_usuario_bonita",
+			"value": "5001",
+			"type": "string"
+		}
+	]
+}
+

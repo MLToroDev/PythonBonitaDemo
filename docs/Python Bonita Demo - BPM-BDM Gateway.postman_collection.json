@@ -1,0 +1,2026 @@
+{
+	"info": {
+		"_postman_id": "59cbe5c2-f858-4fce-ad41-f84b090ab87b",
+		"name": "Python Bonita Demo - BPM/BDM Gateway",
+		"description": "Colección de pruebas para validar la integración del API Gateway BPM/BDM. Separa completamente BPM (usuario real) y BDM (usuario técnico).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23518038"
+	},
+	"item": [
+		{
+			"name": "01 - Autenticación (JWT)",
+			"item": [
+				{
+					"name": "Obtener token JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta contiene access_token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"    pm.expect(jsonData).to.have.property('token_type', 'bearer');",
+									"});",
+									"",
+									"pm.test(\"Token tiene formato válido\", function () {",
+									"    var token = pm.response.json().access_token;",
+									"    pm.expect(token).to.be.a('string');",
+									"    pm.expect(token.split('.')).to.have.lengthOf(3);",
+									"});",
+									"",
+									"pm.collectionVariables.set(\"access_token\", pm.response.json().access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{bonita_user}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "{{bonita_password}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener token JWT - credenciales inválidas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 401 por credenciales inválidas\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de error presente\", function () {",
+									"    pm.expect(pm.response.json()).to.have.property('detail');",
+									"});",
+									"",
+									"pm.test(\"Header WWW-Authenticate presente\", function () {",
+									"    pm.expect(pm.response.headers.get('WWW-Authenticate')).to.include('Bearer');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "{{bonita_user}}",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "credencial_incorrecta",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validar token expirado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 401 por token expirado\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{expired_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02 - Gestión de Flujos de Trabajo (BPM) - Usuario Real",
+			"item": [
+				{
+					"name": "Listar procesos disponibles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta es un arreglo\", function () {",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Headers de seguridad presentes\", function () {",
+									"    pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff');",
+									"    pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY');",
+									"});",
+									"",
+									"pm.test(\"Header X-Process-Time presente\", function () {",
+									"    pm.expect(pm.response.headers.get('X-Process-Time')).to.exist;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar procesos - sin token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 401 sin token\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar procesos - token inválido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 401 por token inválido\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{invalid_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Iniciar flujo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 201 o 404\", function () {",
+									"    pm.expect([201, 404, 409]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"Incluye case_id en la respuesta\", function () {",
+									"        var body = pm.response.json();",
+									"        pm.expect(body).to.have.property('case_id');",
+									"        pm.collectionVariables.set(\"case_id\", body.case_id);",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contract_inputs\": {\n    \"exampleField\": \"valor\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bpm/flujos/{{flow_slug}}/iniciar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"flujos",
+								"{{flow_slug}}",
+								"iniciar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Listar tareas pendientes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Respuesta es un arreglo\", function () {",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});",
+									"",
+									"if (pm.response.json().length > 0) {",
+									"    var task = pm.response.json()[0];",
+									"    pm.test(\"Tarea tiene id\", function () {",
+									"        pm.expect(task).to.have.property('id');",
+									"    });",
+									"    pm.collectionVariables.set(\"task_id\", task.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/tareas/pendientes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"tareas",
+								"pendientes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Completar tarea",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 204 o 404\", function () {",
+									"    pm.expect([204, 404, 502]).to.include(pm.response.code);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"contract_inputs\": {\n    \"field\": \"valor\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bpm/tareas/{{task_id}}/completar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"tareas",
+								"{{task_id}}",
+								"completar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar caso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200 o 404\", function () {",
+									"    pm.expect([200, 404, 502]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Respuesta contiene 'case'\", function () {",
+									"        var body = pm.response.json();",
+									"        pm.expect(body).to.have.property('case');",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/casos/{{case_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"casos",
+								"{{case_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Todas las operaciones BPM usan la sesión del usuario real autenticado"
+		},
+		{
+			"name": "03 - Acceso a Datos de Negocio (BDM) - Usuario Técnico",
+			"item": [
+				{
+					"name": "Validar separación BPM/BDM",
+					"item": [
+						{
+							"name": "BDM requiere JWT (validación frontend)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 401 sin JWT\", function () {",
+											"    pm.response.to.have.status(401);",
+											"});",
+											"",
+											"pm.test(\"Mensaje de error apropiado\", function () {",
+											"    var body = pm.response.json();",
+											"    pm.expect(body).to.have.property('detail');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos?page=0&count=1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "count",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "BDM funciona con JWT válido",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"Estado 200 con JWT válido\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Respuesta es un arreglo\", function () {",
+											"    pm.expect(pm.response.json()).to.be.an('array');",
+											"});",
+											"",
+											"pm.test(\"Headers de seguridad presentes\", function () {",
+											"    pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{access_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/bdm/contratos?page=0&count=1",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"bdm",
+										"contratos"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "count",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "BDM - Contratación y Seguimiento",
+					"item": [
+						{
+							"name": "Contratos Marco",
+							"item": [
+								{
+									"name": "Listar contratos marco",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"pm.test(\"Respuesta es un arreglo\", function () {",
+													"    pm.expect(pm.response.json()).to.be.an('array');",
+													"});",
+													"",
+													"if (pm.response.json().length > 0) {",
+													"    var contrato = pm.response.json()[0];",
+													"    pm.test(\"Contrato tiene id\", function () {",
+													"        pm.expect(contrato).to.have.property('id');",
+													"    });",
+													"    pm.collectionVariables.set(\"contrato_marco_id\", contrato.id);",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos-marco?page=0&count=10",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos-marco"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "count",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Obtener contrato marco por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos-marco/{{contrato_marco_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos-marco",
+												"{{contrato_marco_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Contratos",
+							"item": [
+								{
+									"name": "Listar todos los contratos",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"pm.test(\"Respuesta es un arreglo\", function () {",
+													"    pm.expect(pm.response.json()).to.be.an('array');",
+													"});",
+													"",
+													"if (pm.response.json().length > 0) {",
+													"    var contrato = pm.response.json()[0];",
+													"    pm.test(\"Contrato tiene id\", function () {",
+													"        pm.expect(contrato).to.have.property('id');",
+													"    });",
+													"    pm.collectionVariables.set(\"contrato_id\", contrato.id);",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos?page=0&count=10",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "count",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Obtener contrato por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos",
+												"{{contrato_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Crear un nuevo contrato",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 201 o error\", function () {",
+													"    pm.expect([201, 400, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 201) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"numeroContrato\": \"CT-2024-TEST-001\",\n  \"estado\": \"ACTIVO\",\n  \"valorContrato\": 1000000.0\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Buscar contratos por ID de usuario Bonita",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"pm.test(\"Respuesta es un arreglo\", function () {",
+													"    pm.expect(pm.response.json()).to.be.an('array');",
+													"});"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos/por-usuario/{{id_usuario_bonita}}?page=0&count=10",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos",
+												"por-usuario",
+												"{{id_usuario_bonita}}"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "count",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Listar informes de un contrato",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta es un arreglo\", function () {",
+													"        pm.expect(pm.response.json()).to.be.an('array');",
+													"    });",
+													"    if (pm.response.json().length > 0) {",
+													"        var informe = pm.response.json()[0];",
+													"        pm.test(\"Informe tiene id\", function () {",
+													"            pm.expect(informe).to.have.property('id');",
+													"        });",
+													"        pm.collectionVariables.set(\"informe_id\", informe.id);",
+													"    }",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}/informes?page=0&count=10",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos",
+												"{{contrato_id}}",
+												"informes"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "count",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Listar obligaciones de un contrato",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta es un arreglo\", function () {",
+													"        pm.expect(pm.response.json()).to.be.an('array');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}/obligaciones",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos",
+												"{{contrato_id}}",
+												"obligaciones"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Obtener perfil de contratista de un contrato",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/contratos/{{contrato_id}}/perfil-contratista",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"contratos",
+												"{{contrato_id}}",
+												"perfil-contratista"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Perfiles de Contratista",
+							"item": [
+								{
+									"name": "Listar perfiles",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"pm.test(\"Respuesta es un arreglo\", function () {",
+													"    pm.expect(pm.response.json()).to.be.an('array');",
+													"});",
+													"",
+													"if (pm.response.json().length > 0) {",
+													"    var perfil = pm.response.json()[0];",
+													"    pm.test(\"Perfil tiene id\", function () {",
+													"        pm.expect(perfil).to.have.property('id');",
+													"    });",
+													"    pm.collectionVariables.set(\"perfil_id\", perfil.id);",
+													"    if (perfil.id_usuario_bonita) {",
+													"        pm.collectionVariables.set(\"id_usuario_bonita\", perfil.id_usuario_bonita);",
+													"    }",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/perfiles-contratista?page=0&count=10",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"perfiles-contratista"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "count",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Obtener perfil por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/perfiles-contratista/{{perfil_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"perfiles-contratista",
+												"{{perfil_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Buscar perfil por ID de usuario Bonita",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/perfiles-contratista/por-usuario-bonita/{{id_usuario_bonita}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"perfiles-contratista",
+												"por-usuario-bonita",
+												"{{id_usuario_bonita}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Informes",
+							"item": [
+								{
+									"name": "Obtener informe por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"informes",
+												"{{informe_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Listar ejecuciones de un informe",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta es un arreglo\", function () {",
+													"        pm.expect(pm.response.json()).to.be.an('array');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/informes/{{informe_id}}/ejecuciones",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"informes",
+												"{{informe_id}}",
+												"ejecuciones"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Crear informe",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 201 o error\", function () {",
+													"    pm.expect([201, 400, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 201) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"valorPeriodo\": 500000.0,\n  \"estado\": \"PENDIENTE\",\n  \"mes\": 1,\n  \"anio\": 2024\n}"
+										},
+										"url": {
+											"raw": "{{base_url}}/api/bdm/informes",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"informes"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Obligaciones",
+							"item": [
+								{
+									"name": "Obtener obligación por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/obligaciones/{{obligacion_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"obligaciones",
+												"{{obligacion_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Listar ejecuciones de una obligación",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta es un arreglo\", function () {",
+													"        pm.expect(pm.response.json()).to.be.an('array');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/obligaciones/{{obligacion_id}}/ejecuciones",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"obligaciones",
+												"{{obligacion_id}}",
+												"ejecuciones"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Ejecuciones",
+							"item": [
+								{
+									"name": "Obtener ejecución por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/ejecuciones/{{ejecucion_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"ejecuciones",
+												"{{ejecucion_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Componentes",
+							"item": [
+								{
+									"name": "Obtener componente por ID",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"pm.test(\"Estado 200 o 404\", function () {",
+													"    pm.expect([200, 404, 502, 503]).to.include(pm.response.code);",
+													"});",
+													"",
+													"if (pm.response.code === 200) {",
+													"    pm.test(\"Respuesta contiene id\", function () {",
+													"        var body = pm.response.json();",
+													"        pm.expect(body).to.have.property('id');",
+													"    });",
+													"}"
+												]
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{access_token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{base_url}}/api/bdm/componentes/{{componente_id}}",
+											"host": [
+												"{{base_url}}"
+											],
+											"path": [
+												"api",
+												"bdm",
+												"componentes",
+												"{{componente_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				}
+			],
+			"description": "Todas las operaciones BDM usan el usuario técnico administrador (solo backend). El frontend requiere JWT pero las operaciones se ejecutan con el usuario técnico."
+		},
+		{
+			"name": "04 - Validación de Seguridad y Arquitectura",
+			"item": [
+				{
+					"name": "Validar headers de seguridad",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"X-Content-Type-Options presente\", function () {",
+									"    pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff');",
+									"});",
+									"",
+									"pm.test(\"X-Frame-Options presente\", function () {",
+									"    pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY');",
+									"});",
+									"",
+									"pm.test(\"X-XSS-Protection presente\", function () {",
+									"    pm.expect(pm.response.headers.get('X-XSS-Protection')).to.exist;",
+									"});",
+									"",
+									"pm.test(\"X-Process-Time presente\", function () {",
+									"    pm.expect(pm.response.headers.get('X-Process-Time')).to.exist;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validar separación de rutas BPM/BDM",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Ruta BPM funciona correctamente\", function () {",
+									"    pm.expect([200, 401, 502]).to.include(pm.response.code);",
+									"});",
+									"",
+									"pm.test(\"URL contiene /api/bpm/\", function () {",
+									"    pm.expect(pm.request.url.toString()).to.include('/api/bpm/');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bpm/procesos-disponibles",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bpm",
+								"procesos-disponibles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validar que BDM requiere JWT",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"BDM rechaza peticiones sin JWT\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Mensaje de error apropiado\", function () {",
+									"    var body = pm.response.json();",
+									"    pm.expect(body).to.have.property('detail');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bdm/contratos?page=0&count=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bdm",
+								"contratos"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "count",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validar manejo de errores BDM (503 si usuario técnico falla)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Estado 200, 502 o 503\", function () {",
+									"    pm.expect([200, 502, 503]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 503) {",
+									"    pm.test(\"Error 503 indica problema con usuario técnico\", function () {",
+									"        var body = pm.response.json();",
+									"        pm.expect(body.detail).to.satisfy(function(detail) {",
+									"            return typeof detail === 'string' && detail.includes('técnico') ||",
+									"                   typeof detail === 'object' && detail.message && detail.message.includes('técnico');",
+									"        });",
+									"    });",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/bdm/contratos?page=0&count=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"bdm",
+								"contratos"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "count",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Pruebas para validar la separación BPM/BDM y las medidas de seguridad"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000"
+		},
+		{
+			"key": "bonita_user",
+			"value": "walter.bates"
+		},
+		{
+			"key": "bonita_password",
+			"value": "bpm"
+		},
+		{
+			"key": "flow_slug",
+			"value": "vacaciones"
+		},
+		{
+			"key": "task_id",
+			"value": "REEMPLAZAR_TASK_ID"
+		},
+		{
+			"key": "case_id",
+			"value": "REEMPLAZAR_CASE_ID"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "invalid_token",
+			"value": "token_invalido"
+		},
+		{
+			"key": "expired_token",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0IiwiZXhwIjoxNjAwMDAwMDAwfQ.invalid"
+		},
+		{
+			"key": "contrato_marco_id",
+			"value": "REEMPLAZAR_CONTRATO_MARCO_ID"
+		},
+		{
+			"key": "contrato_id",
+			"value": "REEMPLAZAR_CONTRATO_ID"
+		},
+		{
+			"key": "id_usuario_bonita",
+			"value": "REEMPLAZAR_ID_USUARIO_BONITA"
+		},
+		{
+			"key": "informe_id",
+			"value": "REEMPLAZAR_INFORME_ID"
+		},
+		{
+			"key": "perfil_id",
+			"value": "REEMPLAZAR_PERFIL_ID"
+		},
+		{
+			"key": "obligacion_id",
+			"value": "REEMPLAZAR_OBLIGACION_ID"
+		},
+		{
+			"key": "ejecucion_id",
+			"value": "REEMPLAZAR_EJECUCION_ID"
+		},
+		{
+			"key": "componente_id",
+			"value": "REEMPLAZAR_COMPONENTE_ID"
+		}
+	]
+}

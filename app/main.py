@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 from .api.auth import router as auth_router
 from .api.routers.casos import router as casos_router
@@ -15,6 +16,20 @@ app = FastAPI(
     title="Integración Python-Bonita",
     description="API de referencia para interactuar con Bonita BPM desde una aplicación FastAPI.",
     version="0.1.0",
+)
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:8001",
+        "http://localhost:8001",
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 templates = Jinja2Templates(directory="templates")
